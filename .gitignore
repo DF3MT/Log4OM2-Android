@@ -43,6 +43,11 @@ captures/
 # Keystores
 *.jks
 *.keystore
+release.keystore
+*.b64
+
+# Local signing props
+keystore.properties
 
 # OS
 .DS_Store

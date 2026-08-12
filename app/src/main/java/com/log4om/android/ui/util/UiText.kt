@@ -24,7 +24,7 @@ sealed interface UiText {
     fun asString(): String = when (this) {
         is Resource -> {
             if (args.isEmpty()) stringResource(resId)
-            else stringResource(resId, *args.map { it.toString() }.toTypedArray())
+            else stringResource(resId, *args.toTypedArray())
         }
         is Raw -> value
     }
@@ -32,7 +32,7 @@ sealed interface UiText {
     fun asString(context: Context): String = when (this) {
         is Resource -> {
             if (args.isEmpty()) context.getString(resId)
-            else context.getString(resId, *args.map { it.toString() }.toTypedArray())
+            else context.getString(resId, *args.toTypedArray())
         }
         is Raw -> value
     }

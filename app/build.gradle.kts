@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
 
@@ -12,9 +11,32 @@ android {
         applicationId = "com.log4om.android"
         minSdk = 21
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = (System.getenv("VERSION_CODE")?.toIntOrNull()
+            ?: project.findProperty("versionCode")?.toString()?.toIntOrNull()
+            ?: 1)
+        versionName = System.getenv("VERSION_NAME")
+            ?: project.findProperty("versionName")?.toString()
+            ?: "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        val keystorePath = System.getenv("KEYSTORE_FILE")
+        val storePasswordEnv = System.getenv("KEYSTORE_PASSWORD")
+        val keyAliasEnv = System.getenv("KEY_ALIAS")
+        val keyPasswordEnv = System.getenv("KEY_PASSWORD")
+        if (!keystorePath.isNullOrBlank() &&
+            !storePasswordEnv.isNullOrBlank() &&
+            !keyAliasEnv.isNullOrBlank() &&
+            !keyPasswordEnv.isNullOrBlank()
+        ) {
+            create("release") {
+                storeFile = file(keystorePath)
+                storePassword = storePasswordEnv
+                keyAlias = keyAliasEnv
+                keyPassword = keyPasswordEnv
+            }
+        }
     }
 
     buildTypes {
@@ -24,6 +46,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfigs.findByName("release")?.let { signingConfig = it }
         }
     }
 
@@ -31,10 +54,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
         isCoreLibraryDesugaringEnabled = true
-    }
-
-    kotlinOptions {
-        jvmTarget = "11"
     }
 
     buildFeatures {
@@ -49,6 +68,12 @@ android {
             excludes += "META-INF/NOTICE"
             excludes += "META-INF/LICENSE"
         }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
     }
 }
 

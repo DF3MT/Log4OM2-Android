@@ -7,10 +7,10 @@ import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.automirrored.outlined.LibraryBooks
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.outlined.LibraryBooks
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -29,11 +29,11 @@ import com.log4om.android.ui.viewmodel.*
 
 sealed class Screen(
     val route: String,
-    @StringRes val labelRes: Int,
+    @param:StringRes val labelRes: Int,
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    object Log      : Screen("log",      R.string.nav_log,      Icons.Filled.LibraryBooks, Icons.Outlined.LibraryBooks)
+    object Log      : Screen("log",      R.string.nav_log,      Icons.AutoMirrored.Filled.LibraryBooks, Icons.AutoMirrored.Outlined.LibraryBooks)
     object NewQso   : Screen("new_qso",  R.string.nav_new_qso,  Icons.Filled.Add,            Icons.Filled.Add)
     object Settings : Screen("settings", R.string.nav_settings, Icons.Filled.Settings,       Icons.Outlined.Settings)
 }

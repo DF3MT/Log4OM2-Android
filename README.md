@@ -2,7 +2,8 @@
 
 Android companion client for [Log4OM2](https://www.log4om.com/) that connects directly to your Log4OM **MySQL** log database. Log QSOs from your phone, look up callsigns via QRZ.com, import ADIF files, and keep your station defaults in sync with the desktop log.
 
-> **Repository:** [github.com/DF3MT/Log4OM2-Android](https://github.com/DF3MT/Log4OM2-Android)
+> **Repository:** [github.com/DF3MT/Log4OM2-Android](https://github.com/DF3MT/Log4OM2-Android)  
+> **Download:** [df3mt.github.io/Log4OM2-Android](https://df3mt.github.io/Log4OM2-Android/) · [Releases](https://github.com/DF3MT/Log4OM2-Android/releases)
 
 ---
 
@@ -162,6 +163,50 @@ There is **no in-app language switch** — change the device language. UI labels
 - **Wildcards:** use `*` in callsign/country (e.g. `DL*`, `*HB9*`). Without `*`, text matches as contains.
 - **Multi-select:** long-press a row or tap the checklist toolbar icon; **All** selects every QSO matching the current filters (not only the loaded page).
 - **Export:** Share (system share sheet) or Save as… → `.adi` file (`log4om_export_yyyyMMdd_HHmm.adi`).
+
+---
+
+## CI/CD & downloads
+
+Every push to `main` (and manual **workflow_dispatch**) runs [.github/workflows/release.yml](.github/workflows/release.yml):
+
+1. Builds a **signed** release APK  
+2. Publishes a GitHub Release (`build-<run_number>`) with the APK  
+3. Updates the [GitHub Pages download site](https://df3mt.github.io/Log4OM2-Android/)
+
+### One-time GitHub setup
+
+1. **Pages:** Repository → Settings → Pages → Source = **GitHub Actions**  
+2. **Secrets** (Settings → Secrets and variables → Actions):
+
+| Secret | Content |
+|--------|---------|
+| `KEYSTORE_BASE64` | Base64 of your `.jks` / `.keystore` file |
+| `KEYSTORE_PASSWORD` | Keystore password |
+| `KEY_ALIAS` | Key alias |
+| `KEY_PASSWORD` | Key password |
+
+Encode the keystore (Git Bash / WSL / macOS / Linux):
+
+```bash
+base64 -w0 release.keystore > keystore.b64
+# paste contents of keystore.b64 into KEYSTORE_BASE64
+```
+
+PowerShell:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release.keystore")) | Set-Clipboard
+```
+
+Create a keystore if you do not have one yet:
+
+```bash
+keytool -genkeypair -v -keystore release.keystore -alias log4om \
+  -keyalg RSA -keysize 2048 -validity 10000
+```
+
+Without these secrets the workflow fails on purpose (no unsigned “release” APK).
 
 ---
 

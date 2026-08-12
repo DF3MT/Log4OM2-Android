@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Log4OM Android — Download</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --card: #1a2332;
+      --text: #e7ecf3;
+      --muted: #9aa8bc;
+      --accent: #3d8bfd;
+      --accent-hover: #5aa2ff;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #1c3a5f 0%, var(--bg) 55%);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    main {
+      width: min(560px, 100%);
+      background: color-mix(in srgb, var(--card) 92%, black);
+      border: 1px solid #2a3a50;
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    }
+    h1 { margin: 0 0 .5rem; font-size: 1.75rem; }
+    p { color: var(--muted); line-height: 1.5; }
+    .meta { font-size: .9rem; margin: 1.25rem 0 1.75rem; }
+    .meta div { margin: .25rem 0; }
+    .meta code {
+      background: #0c121a;
+      padding: .15rem .4rem;
+      border-radius: 6px;
+      color: #c9d7ea;
+    }
+    .actions { display: flex; flex-direction: column; gap: .75rem; }
+    a.button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
+      border-radius: 10px;
+      padding: .9rem 1rem;
+      font-weight: 600;
+    }
+    a.primary { background: var(--accent); color: #fff; }
+    a.primary:hover { background: var(--accent-hover); }
+    a.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid #3a4d66;
+    }
+    a.secondary:hover { border-color: var(--accent); color: var(--accent-hover); }
+    footer { margin-top: 1.75rem; font-size: .8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Log4OM Android</h1>
+    <p>Signed release build for sideloading. Install only from this page or the GitHub Releases tab.</p>
+    <div class="meta">
+      <div>Version: <code>{{VERSION_NAME}}</code> (code <code>{{VERSION_CODE}}</code>)</div>
+      <div>Tag: <code>{{TAG}}</code></div>
+      <div>Commit: <code>{{SHA_SHORT}}</code></div>
+    </div>
+    <div class="actions">
+      <a class="button primary" href="{{LATEST_ASSET}}">Download latest APK</a>
+      <a class="button secondary" href="{{VERSIONED_ASSET}}">Download {{APK_NAME}}</a>
+      <a class="button secondary" href="{{RELEASE_URL}}">Open GitHub Release</a>
+      <a class="button secondary" href="{{REPO_URL}}">Source repository</a>
+    </div>
+    <footer>
+      Built automatically from <code>main</code>. Enable “Install unknown apps” for your browser if Android blocks the install.
+    </footer>
+  </main>
+</body>
+</html>

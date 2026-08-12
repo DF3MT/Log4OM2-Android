@@ -41,7 +41,7 @@ fun DropdownField(
                 Icon(Icons.Default.ArrowDropDown, contentDescription = null)
             },
             modifier = Modifier
-                .menuAnchor()
+                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                 .fillMaxWidth()
         )
         ExposedDropdownMenu(

@@ -2,12 +2,16 @@ package com.log4om.android.data.db
 
 import com.log4om.android.data.model.LogFilter
 import java.sql.PreparedStatement
+import java.sql.Timestamp
+import java.time.format.DateTimeFormatter
 
 /**
  * Builds parameterized WHERE clauses for [LogFilter].
  * `*` in callsign/country → SQL `%`; literal `%`/`_`/`!` are escaped with `!`.
  */
 internal object LogFilterSql {
+
+    private val TS_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
 
     data class Built(
         val whereSql: String,
@@ -42,12 +46,12 @@ internal object LogFilterSql {
         }
         filter.dateFrom?.let { from ->
             parts += "qsodate >= ?"
-            val ts = java.sql.Timestamp.valueOf(from.atStartOfDay())
+            val ts = Timestamp.valueOf(from.atStartOfDay().format(TS_FMT))
             binders += { stmt, i -> stmt.setTimestamp(i, ts); i + 1 }
         }
         filter.dateTo?.let { to ->
             parts += "qsodate < ?"
-            val ts = java.sql.Timestamp.valueOf(to.plusDays(1).atStartOfDay())
+            val ts = Timestamp.valueOf(to.plusDays(1).atStartOfDay().format(TS_FMT))
             binders += { stmt, i -> stmt.setTimestamp(i, ts); i + 1 }
         }
         if (filter.country.isNotBlank()) {
