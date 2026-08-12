@@ -17,7 +17,8 @@ data class LogFilter(
     val sotaRef: String = "",
     val iota: String = "",
     val potaRef: String = "",
-    val wwffRef: String = ""
+    val wwffRef: String = "",
+    val cotaRef: String = ""
 ) {
     val isActive: Boolean
         get() = callsign.isNotBlank() ||
@@ -30,7 +31,8 @@ data class LogFilter(
             sotaRef.isNotBlank() ||
             iota.isNotBlank() ||
             potaRef.isNotBlank() ||
-            wwffRef.isNotBlank()
+            wwffRef.isNotBlank() ||
+            cotaRef.isNotBlank()
 
     val dxccNumber: Int? get() = dxcc.trim().toIntOrNull()?.takeIf { it > 0 }
 }

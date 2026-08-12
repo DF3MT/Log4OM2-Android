@@ -10,9 +10,19 @@ class AppViewModelFactory(private val app: Log4OMApp) : ViewModelProvider.Factor
         modelClass.isAssignableFrom(LogViewModel::class.java) ->
             LogViewModel(app.repository) as T
         modelClass.isAssignableFrom(NewQsoViewModel::class.java) ->
-            NewQsoViewModel(app.repository, app.prefs, app.locationHelper) as T
+            NewQsoViewModel(
+                app.repository,
+                app.prefs,
+                app.locationHelper,
+                app.activityProximityService
+            ) as T
         modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
-            SettingsViewModel(app.prefs, app.repository) as T
+            SettingsViewModel(
+                app.prefs,
+                app.repository,
+                app.referenceCatalog,
+                app.referenceSyncService
+            ) as T
         modelClass.isAssignableFrom(UpdateViewModel::class.java) ->
             UpdateViewModel(app) as T
         else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")

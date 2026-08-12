@@ -36,6 +36,14 @@ class AppPrefs(private val context: Context) {
         val DEFAULT_BAND     = stringPreferencesKey("default_band")
         val DEFAULT_MODE     = stringPreferencesKey("default_mode")
         val DEFAULT_TXPWR    = stringPreferencesKey("default_txpwr")
+
+        val RADIUS_SOTA_M = intPreferencesKey("radius_sota_m")
+        val RADIUS_POTA_M = intPreferencesKey("radius_pota_m")
+        val RADIUS_WWFF_M = intPreferencesKey("radius_wwff_m")
+        val RADIUS_COTA_M = intPreferencesKey("radius_cota_m")
+        val RADIUS_IOTA_M = intPreferencesKey("radius_iota_m")
+        val REFS_LAST_SYNC_MS = longPreferencesKey("refs_last_sync_ms")
+        val REFS_LAST_SYNC_NOTE = stringPreferencesKey("refs_last_sync_note")
     }
 
     val dbHost:     Flow<String> = context.dataStore.data.map { it[DB_HOST]     ?: "" }
@@ -62,6 +70,14 @@ class AppPrefs(private val context: Context) {
     val defaultBand:    Flow<String> = context.dataStore.data.map { it[DEFAULT_BAND]     ?: "20m" }
     val defaultMode:    Flow<String> = context.dataStore.data.map { it[DEFAULT_MODE]     ?: "SSB" }
     val defaultTxpwr:   Flow<String> = context.dataStore.data.map { it[DEFAULT_TXPWR]   ?: "" }
+
+    val radiusSotaM: Flow<Int> = context.dataStore.data.map { it[RADIUS_SOTA_M] ?: 200 }
+    val radiusPotaM: Flow<Int> = context.dataStore.data.map { it[RADIUS_POTA_M] ?: 800 }
+    val radiusWwffM: Flow<Int> = context.dataStore.data.map { it[RADIUS_WWFF_M] ?: 500 }
+    val radiusCotaM: Flow<Int> = context.dataStore.data.map { it[RADIUS_COTA_M] ?: 1000 }
+    val radiusIotaM: Flow<Int> = context.dataStore.data.map { it[RADIUS_IOTA_M] ?: 5000 }
+    val refsLastSyncMs: Flow<Long> = context.dataStore.data.map { it[REFS_LAST_SYNC_MS] ?: 0L }
+    val refsLastSyncNote: Flow<String> = context.dataStore.data.map { it[REFS_LAST_SYNC_NOTE] ?: "" }
 
     suspend fun update(block: suspend (MutablePreferences) -> Unit) {
         context.dataStore.edit { prefs -> block(prefs) }

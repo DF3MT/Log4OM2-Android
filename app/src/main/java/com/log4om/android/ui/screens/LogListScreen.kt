@@ -492,6 +492,13 @@ private fun ActiveFilterChips(
                 label = { Text(stringResource(R.string.filter_chip_wwff, filter.wwffRef)) }
             )
         }
+        if (filter.cotaRef.isNotBlank()) {
+            FilterChip(
+                selected = true,
+                onClick = onOpen,
+                label = { Text(stringResource(R.string.filter_chip_cota, filter.cotaRef)) }
+            )
+        }
         TextButton(onClick = onClear) {
             Text(stringResource(R.string.filter_reset))
         }
@@ -517,6 +524,7 @@ private fun FilterBottomSheet(
     var iota by remember { mutableStateOf(initial.iota) }
     var potaRef by remember { mutableStateOf(initial.potaRef) }
     var wwffRef by remember { mutableStateOf(initial.wwffRef) }
+    var cotaRef by remember { mutableStateOf(initial.cotaRef) }
     var pickingFrom by remember { mutableStateOf(false) }
     var pickingTo by remember { mutableStateOf(false) }
 
@@ -618,6 +626,11 @@ private fun FilterBottomSheet(
                 value = wwffRef,
                 onValueChange = { wwffRef = it.uppercase() }
             )
+            LabeledTextField(
+                label = stringResource(R.string.cota_ref),
+                value = cotaRef,
+                onValueChange = { cotaRef = it.uppercase() }
+            )
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -639,7 +652,8 @@ private fun FilterBottomSheet(
                                 sotaRef = sotaRef.trim(),
                                 iota = iota.trim(),
                                 potaRef = potaRef.trim(),
-                                wwffRef = wwffRef.trim()
+                                wwffRef = wwffRef.trim(),
+                                cotaRef = cotaRef.trim()
                             )
                         )
                     },

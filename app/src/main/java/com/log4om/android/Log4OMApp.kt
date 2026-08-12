@@ -7,8 +7,12 @@ import com.log4om.android.data.network.ClubLogApiService
 import com.log4om.android.data.network.HamQthApiService
 import com.log4om.android.data.network.QrzApiService
 import com.log4om.android.data.prefs.AppPrefs
+import com.log4om.android.data.refs.ActivityProximityService
+import com.log4om.android.data.refs.ReferenceCatalog
+import com.log4om.android.data.refs.ReferenceSyncService
 import com.log4om.android.data.repository.LogRepository
 import com.log4om.android.util.LocationHelper
+import java.io.File
 
 class Log4OMApp : Application() {
     val prefs          by lazy { AppPrefs(this) }
@@ -21,4 +25,9 @@ class Log4OMApp : Application() {
         LogRepository(prefs, dbHelper, qsoDao, qrzService, hamqthService, clubLogService)
     }
     val locationHelper by lazy { LocationHelper(this) }
+    val referenceCatalog by lazy { ReferenceCatalog(File(cacheDir, "refs")) }
+    val referenceSyncService by lazy { ReferenceSyncService(referenceCatalog) }
+    val activityProximityService by lazy {
+        ActivityProximityService(referenceCatalog, prefs, locationHelper)
+    }
 }

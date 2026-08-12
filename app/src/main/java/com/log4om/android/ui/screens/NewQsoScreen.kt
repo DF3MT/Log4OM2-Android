@@ -1,5 +1,9 @@
 package com.log4om.android.ui.screens
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,6 +20,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.log4om.android.R
 import com.log4om.android.data.model.Qso
+import com.log4om.android.data.refs.ActivityHit
+import com.log4om.android.data.refs.MatchMethod
 import com.log4om.android.ui.components.DropdownField
 import com.log4om.android.ui.components.LabeledTextField
 import com.log4om.android.ui.components.OsmMiniMap
@@ -72,6 +78,24 @@ fun NewQsoScreen(
         qrzErrorSnackbar?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.dismissQrzError()
+        }
+    }
+
+    val refsErrorText = form.refsCheckError?.asString()
+    LaunchedEffect(refsErrorText) {
+        refsErrorText?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.dismissRefsCheckError()
+        }
+    }
+
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { grants ->
+        if (grants.values.any { it }) viewModel.checkReferencesHere()
+        else {
+            // ViewModel still reports need-permission if check is attempted without grant
+            viewModel.checkReferencesHere()
         }
     }
 
@@ -363,6 +387,27 @@ fun NewQsoScreen(
             }
 
             SectionHeader(stringResource(R.string.section_awards))
+            OutlinedButton(
+                onClick = {
+                    locationPermissionLauncher.launch(
+                        arrayOf(
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                            Manifest.permission.ACCESS_COARSE_LOCATION
+                        )
+                    )
+                },
+                enabled = !form.refsChecking,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (form.refsChecking) {
+                    CircularProgressIndicator(Modifier.size(18.dp), strokeWidth = 2.dp)
+                    Spacer(Modifier.width(8.dp))
+                } else {
+                    Icon(Icons.Default.MyLocation, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                }
+                Text(stringResource(R.string.refs_here))
+            }
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -397,6 +442,11 @@ fun NewQsoScreen(
                     modifier = Modifier.weight(1f)
                 )
             }
+            LabeledTextField(
+                stringResource(R.string.cota_ref),
+                form.cotaRef,
+                viewModel::updateCotaRef
+            )
             SectionHeader(stringResource(R.string.section_extra))
             DropdownField(
                 label = stringResource(R.string.prop_mode),
@@ -427,6 +477,100 @@ fun NewQsoScreen(
             Spacer(Modifier.height(16.dp))
         }
     }
+
+    if (form.refsDialogOpen) {
+        NearbyRefsDialog(
+            hits = form.refsHits,
+            onDismiss = viewModel::dismissRefsDialog,
+            onApply = viewModel::applyReferenceHits
+        )
+    }
+}
+
+@Composable
+private fun NearbyRefsDialog(
+    hits: List<ActivityHit>,
+    onDismiss: () -> Unit,
+    onApply: (List<ActivityHit>) -> Unit
+) {
+    val selected = remember {
+        mutableStateMapOf<String, Boolean>().apply {
+            hits.forEach { put(it.ref.program.name + "|" + it.ref.reference, true) }
+        }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.refs_dialog_title)) },
+        text = {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                hits.forEach { hit ->
+                    val key = hit.ref.program.name + "|" + hit.ref.reference
+                    val checked = selected[key] == true
+                    val methodLabel = when (hit.method) {
+                        MatchMethod.RADIUS -> stringResource(R.string.refs_method_radius)
+                        MatchMethod.BBOX -> stringResource(R.string.refs_method_bbox)
+                        MatchMethod.POLYGON -> stringResource(R.string.refs_method_polygon)
+                    }
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .clickable { selected[key] = !checked }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = checked,
+                            onCheckedChange = { selected[key] = it }
+                        )
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                "${hit.ref.program.name} ${hit.ref.reference}",
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            if (hit.ref.name.isNotBlank()) {
+                                Text(
+                                    hit.ref.name,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                            Text(
+                                stringResource(
+                                    R.string.refs_hit_detail,
+                                    methodLabel,
+                                    hit.ref.program.name,
+                                    hit.distanceM,
+                                    hit.radiusM
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onApply(hits.filter {
+                        selected[it.ref.program.name + "|" + it.ref.reference] == true
+                    })
+                }
+            ) {
+                Text(stringResource(R.string.refs_dialog_apply))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.cancel))
+            }
+        }
+    )
 }
 
 @Composable
