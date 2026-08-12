@@ -1,9 +1,34 @@
-# Log4OM Android
+<p align="center">
+  <img src="docs/assets/readme-hero.svg" alt="Log4OM Android — companion for Log4OM2" width="100%" />
+</p>
 
-Android companion client for [Log4OM2](https://www.log4om.com/) that connects directly to your Log4OM **MySQL** log database. Log QSOs from your phone, look up callsigns via QRZ.com, import ADIF files, and keep your station defaults in sync with the desktop log.
+<p align="center">
+  <strong>Android companion</strong> for <a href="https://www.log4om.com/">Log4OM2</a> —
+  connect to your MySQL log, work QSOs from the phone, and stay in sync with the desktop station.
+</p>
 
-> **Repository:** [github.com/DF3MT/Log4OM2-Android](https://github.com/DF3MT/Log4OM2-Android)  
-> **Download:** [df3mt.github.io/Log4OM2-Android](https://df3mt.github.io/Log4OM2-Android/) · [Releases](https://github.com/DF3MT/Log4OM2-Android/releases)
+<p align="center">
+  <a href="https://df3mt.github.io/Log4OM2-Android/"><img src="https://img.shields.io/badge/Download-APK-2F6FED?style=for-the-badge&labelColor=0E1520" alt="Download APK" /></a>
+  <a href="https://github.com/DF3MT/Log4OM2-Android/releases"><img src="https://img.shields.io/github/v/release/DF3MT/Log4OM2-Android?style=for-the-badge&color=E8C9A0&labelColor=0E1520&label=Release" alt="Latest release" /></a>
+  <a href="https://github.com/DF3MT/Log4OM2-Android/actions/workflows/release.yml"><img src="https://img.shields.io/github/actions/workflow/status/DF3MT/Log4OM2-Android/release.yml?branch=main&style=for-the-badge&label=CI&labelColor=0E1520" alt="CI status" /></a>
+</p>
+
+<p align="center">
+  <a href="https://df3mt.github.io/Log4OM2-Android/">Download page</a>
+  ·
+  <a href="https://github.com/DF3MT/Log4OM2-Android/releases">Releases</a>
+  ·
+  <a href="https://www.log4om.com/download/">Log4OM desktop</a>
+</p>
+
+---
+
+## Why this app?
+
+- **Same log as the desktop** — thin client over your Log4OM **MySQL** `log` table (no separate phone database)
+- **Log on the go** — new / edit / delete QSOs, QRZ lookup, past QSOs for the callsign
+- **Filters & ADIF** — filter the book, multi-select, share or save `.adi`
+- **Feels at home** — German / English follow the phone language; in-app update check from GitHub Releases
 
 ---
 
@@ -11,71 +36,64 @@ Android companion client for [Log4OM2](https://www.log4om.com/) that connects di
 
 | Area | What you get |
 |------|----------------|
-| **Logbook** | Paginated QSO list, search by callsign, edit & delete |
-| **New QSO** | Full QSO form (band, mode, RST, DXCC, CQ/ITU, gridsquare, propagation, contest, notes, …) |
-| **QRZ lookup** | Auto lookup while typing (XML API; subscription required) |
-| **Past QSOs** | History with the same callsign shown while logging |
-| **ADIF / ADI import** | Bulk import into MySQL; duplicates skipped (`INSERT IGNORE`) |
-| **Station defaults** | Callsign, locator, name, rig, DXCC, default band/mode/RST/power |
-| **GPS** | Optional latitude/longitude for *my* station when saving (if location permission granted) |
-| **Languages** | German (default) and English via Android system language |
-| **Updates** | Checks GitHub Releases on startup and from Settings; install in-app or open browser |
+| **Logbook** | Paginated list, search, edit & delete, filters (call / band / mode / date / country / DXCC) |
+| **New QSO** | Full form — band, mode, RST, DXCC, CQ/ITU, grid, propagation, contest, notes… |
+| **QRZ** | Auto lookup while typing (XML API; subscription required) |
+| **ADIF** | Import into MySQL; export selected / filtered QSOs |
+| **Station** | Callsign, locator, rig, defaults, optional GPS for *my* lat/lon |
+| **Updates** | Checks GitHub Releases on startup and from Settings |
+
+---
+
+## Download & install
+
+1. Grab the signed APK from the **[download page](https://df3mt.github.io/Log4OM2-Android/)** or **[Releases](https://github.com/DF3MT/Log4OM2-Android/releases)**
+2. On the phone, allow install from that browser / file manager (“unknown apps”)
+3. If you previously installed a **debug / Android Studio** build, **uninstall it first** — different signing keys show up as “App not installed”
+
+Requires **Android 5.0+** (API 21).
+
+---
+
+## Quick start (on the phone)
+
+Open **Settings** and set:
+
+1. **My station** — callsign, grid, name, rig, DXCC  
+2. **MySQL** — host, port (`3306`), database, user, password → **Test connection**  
+3. **QRZ.com** (optional) — XML API credentials  
+4. **Defaults** — RST, band, mode, power → **Save**
+
+Your phone needs a network path to the MySQL host (LAN or VPN). Do **not** expose port `3306` to the open internet without protection.
 
 ---
 
 ## Requirements
 
-### On your phone / emulator
+**Phone**
 
-- Android **5.0+** (API 21); target SDK **35**
-- Network access to the host running the Log4OM MySQL server
-- Optional: location permission for station lat/lon
-- Optional: [QRZ.com](https://www.qrz.com/) XML API subscription for callsign lookup
+- Network to the Log4OM MySQL server  
+- Optional: location permission · QRZ XML subscription  
 
-### On your Log4OM / network side
+**Station / network**
 
-- Log4OM2 with MySQL backend enabled
-- MySQL reachable from the phone (LAN, VPN, or port forward — **not** recommended over the open internet without TLS/VPN)
-- A database user that can `SELECT` / `INSERT` / `UPDATE` / `DELETE` on the `log` table
+- Log4OM2 with MySQL backend  
+- DB user with `SELECT` / `INSERT` / `UPDATE` / `DELETE` on `log`  
 
 ---
 
-## Getting started
+## Security notes
 
-### 1. Clone and open
+Please read before exposing MySQL beyond your LAN:
 
-```bash
-git clone git@github.com:DF3MT/Log4OM2-Android.git
-cd Log4OM2-Android
-```
-
-Open the folder in **Android Studio** (Ladybug / recent AGP-compatible version). Let Gradle sync.
-
-### 2. Build & run
-
-- Connect a device or start an emulator
-- Run the `app` configuration, or from a terminal (once the Gradle wrapper scripts are present):
-
-```bash
-./gradlew :app:assembleDebug
-./gradlew :app:installDebug
-```
-
-### 3. Configure the app
-
-Open **Settings** (bottom navigation) and fill in:
-
-1. **My station** — your callsign, gridsquare, name, rig, DXCC entity number  
-2. **MySQL** — host/IP, port (default `3306`), database name, user, password → **Test connection**  
-3. **QRZ.com** (optional) — username/callsign and password for XML API  
-4. **Defaults** — default RST, band, mode, TX power for new QSOs  
-5. Tap **Save**
+- JDBC uses **`useSSL=false`** — prefer VPN / tunnel for anything outside a trusted LAN  
+- DB and QRZ passwords live in **DataStore** (not encrypted at rest)  
+- Prefer a dedicated MySQL user with **minimum** rights on the log database  
+- Do **not** publish MySQL `3306` to the public internet  
 
 ---
 
 ## How it works
-
-The phone is a **thin client**: there is no local Room/SQLite log copy. Every list/search/save/delete talks to the remote MySQL `log` table over JDBC.
 
 ```
 ┌─────────────────┐     JDBC (MySQL)      ┌──────────────────┐
@@ -89,195 +107,74 @@ The phone is a **thin client**: there is no local Room/SQLite log copy. Every li
 └─────────────────┘
 ```
 
-### Architecture (packages)
+---
 
+<details>
+<summary><strong>For developers</strong> — build, architecture, CI, layout</summary>
+
+### Clone & run
+
+```bash
+git clone git@github.com:DF3MT/Log4OM2-Android.git
+cd Log4OM2-Android
 ```
-com.log4om.android
-├── MainActivity / Log4OMApp          # App shell, DI-ish wiring
-├── ui/
-│   ├── screens/                     # Log, New QSO, Settings
-│   ├── viewmodel/                   # StateFlows + use cases
-│   ├── components/                  # Shared Compose widgets
-│   ├── theme/
-│   └── util/UiText                  # Localized messages from VMs
-├── data/
-│   ├── db/                          # DatabaseHelper + QsoDao (JDBC)
-│   ├── repository/LogRepository
-│   ├── network/QrzApiService        # OkHttp
-│   ├── prefs/AppPrefs               # DataStore
-│   ├── adif/                        # Parser, mapper, callsign→country
-│   └── model/
-└── util/                            # AmateurRadio constants, LocationHelper
+
+Open in **Android Studio**, or:
+
+```bash
+./gradlew :app:assembleDebug
+./gradlew :app:installDebug
 ```
+
+Debug builds use `applicationId` `com.log4om.android.debug` so they do not clash with the signed release APK.
 
 ### Tech stack
 
-- Kotlin, Jetpack Compose, Material 3, Navigation Compose  
-- Coroutines + StateFlow  
-- DataStore Preferences  
-- OkHttp (QRZ)  
-- MySQL Connector/J **5.1.49** (Android-compatible JDBC)  
-- Core library desugaring (`java.time` on older APIs)
+Kotlin · Jetpack Compose · Material 3 · Coroutines / StateFlow · DataStore · OkHttp · MySQL Connector/J **5.1.49** · core library desugaring
 
----
+### Package layout
 
-## Usage guide
+```
+com.log4om.android
+├── ui/          # screens, viewmodels, theme
+├── data/        # JDBC, repository, QRZ, ADIF, prefs
+└── util/        # bands/modes, location, APK install
+```
 
-### Logbook
+### CI / CD
 
-- Scroll through recent QSOs (pages of 50)
-- Search by callsign
-- Tap a row to **edit**; overflow menu for edit/delete
-- Pull refresh via the toolbar refresh icon
+Pushes to `main` (and manual **workflow_dispatch**) run [`.github/workflows/release.yml`](.github/workflows/release.yml): signed `assembleRelease` → GitHub Release (`build-<n>`) → Pages site from `site/index.template.html`.
 
-### New QSO
-
-- Enter callsign — after a short debounce, past QSOs and QRZ data may fill in  
-- Band change updates a default frequency; mode change adjusts default RST  
-- Save writes an `INSERT` or `UPDATE` into MySQL  
-- Station fields (`stationcallsign`, `mygridsquare`, `mycountry`, …) come from Settings (+ GPS if available)
-
-### ADIF import
-
-In Settings → **ADIF / ADI import**:
-
-1. Pick an `.adi` / ADIF file  
-2. Records without CALL / BAND / MODE / QSO_DATE are skipped  
-3. Duplicates matching the DB unique key (typically mode + date + band + callsign) are skipped via `INSERT IGNORE`
-
----
-
-## Localization
-
-| Locale | Resource folder | Role |
-|--------|-----------------|------|
-| German | `res/values/` | Default / fallback |
-| English | `res/values-en/` | Used when the system language is English |
-
-There is **no in-app language switch** — change the device language. UI labels, dialogs, snackbars, and ViewModel status/error messages are localized. Ham terms (QSO, RST, DXCC, QTH, …) stay as-is.
-
----
-
-## Logbook filters & ADIF export
-
-- **Filters:** callsign, band, mode, date from/to, country, DXCC (toolbar filter icon → bottom sheet).
-- **Wildcards:** use `*` in callsign/country (e.g. `DL*`, `*HB9*`). Without `*`, text matches as contains.
-- **Multi-select:** long-press a row or tap the checklist toolbar icon; **All** selects every QSO matching the current filters (not only the loaded page).
-- **Export:** Share (system share sheet) or Save as… → `.adi` file (`log4om_export_yyyyMMdd_HHmm.adi`).
-
----
-
-## CI/CD & downloads
-
-Every push to `main` (and manual **workflow_dispatch**) runs [.github/workflows/release.yml](.github/workflows/release.yml):
-
-1. Builds a **signed** release APK  
-2. Publishes a GitHub Release (`build-<run_number>`) with the APK  
-3. Updates the [GitHub Pages download site](https://df3mt.github.io/Log4OM2-Android/)
-
-### One-time GitHub setup
-
-1. **Pages:** Repository → Settings → Pages → Source = **GitHub Actions**  
-2. **Secrets** (Settings → Secrets and variables → Actions):
-
-| Secret | Content |
-|--------|---------|
-| `KEYSTORE_BASE64` | Base64 of your `.jks` / `.keystore` file |
-| `KEYSTORE_PASSWORD` | Keystore password |
-| `KEY_ALIAS` | Key alias |
-| `KEY_PASSWORD` | Key password |
-
-Encode the keystore (Git Bash / WSL / macOS / Linux):
+**Secrets:** `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`  
+**Pages:** Settings → Pages → Source = **GitHub Actions**
 
 ```bash
 base64 -w0 release.keystore > keystore.b64
-# paste contents of keystore.b64 into KEYSTORE_BASE64
 ```
-
-PowerShell:
 
 ```powershell
 [Convert]::ToBase64String([IO.File]::ReadAllBytes("release.keystore")) | Set-Clipboard
 ```
 
-Create a keystore if you do not have one yet:
+### Known limitations
 
-```bash
-keytool -genkeypair -v -keystore release.keystore -alias log4om \
-  -keyalg RSA -keysize 2048 -validity 10000
-```
-
-Without these secrets the workflow fails on purpose (no unsigned “release” APK).
-
----
-
-## Security notes
-
-Please read before exposing MySQL beyond your LAN:
-
-- JDBC is configured with **`useSSL=false`** — credentials and QSOs travel in cleartext unless you wrap the path in a VPN / tunnel.
-- DB and QRZ passwords are stored in **DataStore** (not encrypted at rest).
-- `android:allowBackup="true"` may include preferences in Android backups.
-- Prefer a dedicated MySQL user with the **minimum** rights on the log database.
-- Do **not** expose MySQL port `3306` to the public internet.
-
----
-
-## Project layout (repo)
-
-```
-Log4OM2-Android/
-├── app/
-│   ├── build.gradle.kts
-│   ├── proguard-rules.pro
-│   └── src/main/
-│       ├── AndroidManifest.xml
-│       ├── java/com/log4om/android/…
-│       └── res/
-│           ├── values/strings.xml       # German
-│           ├── values-en/strings.xml    # English
-│           └── xml/network_security_config.xml
-├── gradle/
-│   ├── libs.versions.toml
-│   └── wrapper/
-├── docs/superpowers/specs/              # Design notes
-├── build.gradle.kts
-├── settings.gradle.kts
-└── .gitignore
-```
-
----
-
-## Development
+- Frequency: DB stores kHz; UI labels MHz — careful when editing  
+- Location permission declared; runtime dialog may still be incomplete  
+- Large ADIF imports / select-all load matching data into memory  
 
 ### Conventions
 
-- Conventional commits (`feat`, `fix`, `chore`, …) preferred  
-- UI strings belong in `strings.xml` / `values-en`; ViewModels emit `UiText`, not hard-coded German  
-- Keep JDBC on a background dispatcher (`Dispatchers.IO`)
+Conventional commits · UI strings in `values` / `values-en` · ViewModels emit `UiText` · JDBC on `Dispatchers.IO`
 
-### Known limitations / TODOs
-
-- Frequency display/edit: DB stores kHz; UI labels MHz — be careful when editing existing QSOs  
-- Location permission is declared but not requested with a runtime dialog yet  
-- Large ADIF files are read fully into memory on import  
-- Select-all on huge logs loads all matching IDs into memory  
-
----
-
-## Contributing
-
-Issues and pull requests are welcome on GitHub. For larger changes, open an issue first so scope stays clear.
+</details>
 
 ---
 
 ## Credits
 
-- Desktop logging: [Log4OM](https://www.log4om.com/)  
+- Desktop logging: [Log4OM](https://www.log4om.com/) ([download](https://www.log4om.com/download/))  
 - Callsign data: [QRZ.com](https://www.qrz.com/) XML API  
-- Callsign → country prefix table bundled in-app for ADIF / station country hints  
-
----
+- Companion app: [DF3MT](https://github.com/DF3MT)
 
 ## License
 
