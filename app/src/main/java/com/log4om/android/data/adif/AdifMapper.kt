@@ -64,6 +64,7 @@ object AdifMapper {
             iota            = rec["IOTA"].orEmpty(),
             potaRef         = rec["POTA_REF"].orEmpty(),
             wwffRef         = rec["WWFF_REF"].orEmpty(),
+            cotaRef         = rec["COTA_REF"].orEmpty(),
             lat             = rec["LAT"]?.toDoubleOrNull(),
             lon             = rec["LON"]?.toDoubleOrNull(),
             distance        = rec["DISTANCE"]?.toDoubleOrNull(),

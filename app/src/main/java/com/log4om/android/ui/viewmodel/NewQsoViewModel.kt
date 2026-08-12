@@ -7,6 +7,9 @@ import com.log4om.android.data.adif.CallsignCountry
 import com.log4om.android.data.model.Qso
 import com.log4om.android.data.model.QrzCallsignData
 import com.log4om.android.data.prefs.AppPrefs
+import com.log4om.android.data.refs.ActivityHit
+import com.log4om.android.data.refs.ActivityProgram
+import com.log4om.android.data.refs.ActivityProximityService
 import com.log4om.android.data.repository.LogRepository
 import com.log4om.android.ui.util.UiText
 import com.log4om.android.util.AmateurRadio
@@ -53,6 +56,7 @@ data class QsoFormState(
     val iota: String = "",
     val potaRef: String = "",
     val wwffRef: String = "",
+    val cotaRef: String = "",
     val contactLat: Double? = null,
     val contactLon: Double? = null,
     val stationLat: Double? = null,
@@ -67,13 +71,20 @@ data class QsoFormState(
     val isSaving: Boolean = false,
     val saveError: UiText? = null,
     val saveSuccess: Boolean = false,
-    val isEditMode: Boolean = false
+    val isEditMode: Boolean = false,
+    val refsChecking: Boolean = false,
+    val refsCheckError: UiText? = null,
+    val refsHits: List<ActivityHit> = emptyList(),
+    val refsDialogOpen: Boolean = false,
+    val refsFixLat: Double? = null,
+    val refsFixLon: Double? = null
 )
 
 class NewQsoViewModel(
     private val repository: LogRepository,
     private val prefs: AppPrefs,
-    private val locationHelper: LocationHelper
+    private val locationHelper: LocationHelper,
+    private val proximityService: ActivityProximityService
 ) : ViewModel() {
 
     private val _form = MutableStateFlow(QsoFormState())
@@ -241,6 +252,7 @@ class NewQsoViewModel(
             iota       = qso.iota,
             potaRef    = qso.potaRef,
             wwffRef    = qso.wwffRef,
+            cotaRef    = qso.cotaRef,
             contactLat = qso.lat,
             contactLon = qso.lon,
             distanceKm = qso.distance,
@@ -292,12 +304,81 @@ class NewQsoViewModel(
     fun updateContestid(v: String)    = _form.update { it.copy(contestid = v) }
     fun updateSatmode(v: String)      = _form.update { it.copy(satmode = v) }
     fun updateSatname(v: String)      = _form.update { it.copy(satname = v) }
-    fun updateSotaRef(v: String)      = _form.update { it.copy(sotaRef = v.uppercase().take(20)) }
+    fun updateSotaRef(v: String)      = _form.update { it.copy(sotaRef = v.uppercase().take(40)) }
     fun updateIota(v: String)         = _form.update { it.copy(iota = v.uppercase().take(20)) }
-    fun updatePotaRef(v: String)      = _form.update { it.copy(potaRef = v.uppercase().take(20)) }
-    fun updateWwffRef(v: String)      = _form.update { it.copy(wwffRef = v.uppercase().take(20)) }
+    fun updatePotaRef(v: String)      = _form.update { it.copy(potaRef = v.uppercase().take(40)) }
+    fun updateWwffRef(v: String)      = _form.update { it.copy(wwffRef = v.uppercase().take(40)) }
+    fun updateCotaRef(v: String)      = _form.update { it.copy(cotaRef = v.uppercase().take(40)) }
     fun dismissQrzError()             = _form.update { it.copy(qrzError = null) }
     fun dismissSaveError()            = _form.update { it.copy(saveError = null) }
+    fun dismissRefsCheckError()       = _form.update { it.copy(refsCheckError = null) }
+    fun dismissRefsDialog()           = _form.update {
+        it.copy(refsDialogOpen = false, refsHits = emptyList())
+    }
+
+    fun checkReferencesHere() {
+        viewModelScope.launch {
+            _form.update {
+                it.copy(refsChecking = true, refsCheckError = null, refsDialogOpen = false)
+            }
+            proximityService.checkHere().fold(
+                onSuccess = { result ->
+                    when {
+                        result.catalogEmpty -> _form.update {
+                            it.copy(
+                                refsChecking = false,
+                                refsCheckError = UiText.Resource(R.string.refs_sync_needed)
+                            )
+                        }
+                        result.hits.isEmpty() -> _form.update {
+                            it.copy(
+                                refsChecking = false,
+                                refsFixLat = result.lat,
+                                refsFixLon = result.lon,
+                                refsCheckError = UiText.Resource(R.string.refs_none_here)
+                            )
+                        }
+                        else -> _form.update {
+                            it.copy(
+                                refsChecking = false,
+                                refsHits = result.hits,
+                                refsFixLat = result.lat,
+                                refsFixLon = result.lon,
+                                refsDialogOpen = true
+                            )
+                        }
+                    }
+                },
+                onFailure = { e ->
+                    val msg = e.message.orEmpty()
+                    val text = when (msg) {
+                        "NO_LOCATION_PERMISSION" -> UiText.Resource(R.string.refs_need_location)
+                        "NO_GPS_FIX" -> UiText.Resource(R.string.refs_no_gps)
+                        else -> UiText.Resource(
+                            R.string.refs_check_failed,
+                            e.localizedMessage ?: msg
+                        )
+                    }
+                    _form.update { it.copy(refsChecking = false, refsCheckError = text) }
+                }
+            )
+        }
+    }
+
+    fun applyReferenceHits(selected: List<ActivityHit>) {
+        val fields = proximityService.applyHitsToFields(selected)
+        _form.update { s ->
+            s.copy(
+                sotaRef = fields[ActivityProgram.SOTA] ?: s.sotaRef,
+                potaRef = fields[ActivityProgram.POTA] ?: s.potaRef,
+                wwffRef = fields[ActivityProgram.WWFF] ?: s.wwffRef,
+                cotaRef = fields[ActivityProgram.COTA] ?: s.cotaRef,
+                iota = fields[ActivityProgram.IOTA] ?: s.iota,
+                refsDialogOpen = false,
+                refsHits = emptyList()
+            )
+        }
+    }
 
     fun lookupCallsign(silent: Boolean = false) {
         val call = _form.value.callsign.trim()
@@ -419,6 +500,7 @@ class NewQsoViewModel(
                 iota            = s.iota,
                 potaRef         = s.potaRef,
                 wwffRef         = s.wwffRef,
+                cotaRef         = s.cotaRef,
                 programid       = "Log4OM Android",
                 programversion  = "1.0"
             )

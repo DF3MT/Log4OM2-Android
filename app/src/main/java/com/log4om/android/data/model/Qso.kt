@@ -89,6 +89,7 @@ data class Qso(
     val iota: String = "",
     val potaRef: String = "",
     val wwffRef: String = "",
+    val cotaRef: String = "",
     val stationcallsign: String = "",
     val srx: Double? = null,
     val srxstring: String = "",

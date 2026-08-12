@@ -197,7 +197,7 @@ class QsoDao(private val db: DatabaseHelper) {
             mydxcc, mylat, mylon,
             forceinit, mufday, reliability, signaltonoiseratio, sunspots,
             lat, lon, distance,
-            sota_ref, iota, pota_ref, wwff_ref
+            sota_ref, iota, pota_ref, wwff_ref, cota_ref
         ) VALUES (
             ?,?,?,?,?,
             ?,?,?,?,
@@ -217,7 +217,7 @@ class QsoDao(private val db: DatabaseHelper) {
             ?,?,?,
             ?,?,?,?,?,
             ?,?,?,
-            ?,?,?,?
+            ?,?,?,?,?
         )
     """.trimIndent()
 
@@ -238,7 +238,7 @@ class QsoDao(private val db: DatabaseHelper) {
             satmode=?, satname=?, satelliteqso=?,
             operator=?, sig=?, siginfo=?,
             lat=?, lon=?, distance=?,
-            sota_ref=?, iota=?, pota_ref=?, wwff_ref=?
+            sota_ref=?, iota=?, pota_ref=?, wwff_ref=?, cota_ref=?
         WHERE qsoid=?
     """.trimIndent()
 
@@ -323,6 +323,7 @@ class QsoDao(private val db: DatabaseHelper) {
         setString(i++, q.iota)
         setString(i++, q.potaRef)
         setString(i++, q.wwffRef)
+        setString(i++, q.cotaRef)
     }
 
     private fun java.sql.PreparedStatement.bindQsoUpdate(q: Qso) {
@@ -381,6 +382,7 @@ class QsoDao(private val db: DatabaseHelper) {
         setString(i++, q.iota)
         setString(i++, q.potaRef)
         setString(i++, q.wwffRef)
+        setString(i++, q.cotaRef)
         setLong(i, q.qsoid)
     }
 
@@ -493,6 +495,7 @@ class QsoDao(private val db: DatabaseHelper) {
         iota             = softStr("iota"),
         potaRef          = softStr("pota_ref"),
         wwffRef          = softStr("wwff_ref"),
+        cotaRef          = softStr("cota_ref"),
         stationcallsign  = str("stationcallsign"),
         srx              = optDouble("srx"),
         srxstring        = str("srxstring"),

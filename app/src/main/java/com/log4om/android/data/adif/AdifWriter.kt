@@ -66,6 +66,7 @@ object AdifWriter {
         appendField("IOTA", q.iota)
         appendField("POTA_REF", q.potaRef)
         appendField("WWFF_REF", q.wwffRef)
+        appendField("COTA_REF", q.cotaRef)
         q.lat?.let { appendField("LAT", it.toString()) }
         q.lon?.let { appendField("LON", it.toString()) }
         q.distance?.let { appendField("DISTANCE", it.toString()) }

@@ -83,6 +83,11 @@ internal object LogFilterSql {
             val pattern = toLikePattern(filter.wwffRef.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
+        if (filter.cotaRef.isNotBlank()) {
+            parts += "cota_ref LIKE ? ESCAPE '!'"
+            val pattern = toLikePattern(filter.cotaRef.trim().uppercase())
+            binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
+        }
 
         val where = if (parts.isEmpty()) "" else "WHERE " + parts.joinToString(" AND ")
         return Built(where, binders)

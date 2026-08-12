@@ -264,6 +264,112 @@ fun SettingsScreen(
                 onValueChange = viewModel::updateClublogApiKey
             )
 
+            SectionHeader(stringResource(R.string.section_activity_gps))
+            Text(
+                stringResource(R.string.activity_gps_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                stringResource(
+                    R.string.refs_counts,
+                    state.refsCountSota,
+                    state.refsCountPota,
+                    state.refsCountWwff,
+                    state.refsCountCota,
+                    state.refsCountIota
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                if (state.refsLastSyncLabel.isBlank()) {
+                    stringResource(R.string.refs_last_sync_never)
+                } else {
+                    stringResource(R.string.refs_last_sync, state.refsLastSyncLabel)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (state.refsSyncNote.isNotBlank()) {
+                Text(
+                    state.refsSyncNote,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Text(
+                stringResource(R.string.sota_vertical_note),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LabeledTextField(
+                    label = stringResource(R.string.radius_sota_m),
+                    value = state.radiusSotaM,
+                    onValueChange = viewModel::updateRadiusSota,
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f)
+                )
+                LabeledTextField(
+                    label = stringResource(R.string.radius_pota_m),
+                    value = state.radiusPotaM,
+                    onValueChange = viewModel::updateRadiusPota,
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LabeledTextField(
+                    label = stringResource(R.string.radius_wwff_m),
+                    value = state.radiusWwffM,
+                    onValueChange = viewModel::updateRadiusWwff,
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f)
+                )
+                LabeledTextField(
+                    label = stringResource(R.string.radius_cota_m),
+                    value = state.radiusCotaM,
+                    onValueChange = viewModel::updateRadiusCota,
+                    keyboardType = KeyboardType.Number,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            LabeledTextField(
+                label = stringResource(R.string.radius_iota_m),
+                value = state.radiusIotaM,
+                onValueChange = viewModel::updateRadiusIota,
+                keyboardType = KeyboardType.Number
+            )
+            Button(
+                onClick = viewModel::syncActivityRefs,
+                enabled = !state.isSyncingRefs,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (state.isSyncingRefs) {
+                    CircularProgressIndicator(
+                        Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        state.refsSyncProgress.ifBlank {
+                            stringResource(R.string.refs_syncing)
+                        }
+                    )
+                } else {
+                    Icon(Icons.Default.CloudDownload, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.refs_sync_now))
+                }
+            }
+
             SectionHeader(stringResource(R.string.section_adif))
             Text(
                 stringResource(R.string.adif_hint),
