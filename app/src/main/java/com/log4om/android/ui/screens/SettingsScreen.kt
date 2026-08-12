@@ -22,12 +22,17 @@ import com.log4om.android.ui.components.DropdownField
 import com.log4om.android.ui.components.LabeledTextField
 import com.log4om.android.ui.components.SectionHeader
 import com.log4om.android.ui.viewmodel.SettingsViewModel
+import com.log4om.android.ui.viewmodel.UpdateViewModel
 import com.log4om.android.util.AmateurRadio
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(viewModel: SettingsViewModel) {
+fun SettingsScreen(
+    viewModel: SettingsViewModel,
+    updateViewModel: UpdateViewModel
+) {
     val state      by viewModel.state.collectAsState()
+    val updateState by updateViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     var showDbPw   by remember { mutableStateOf(false) }
     var showQrzPw  by remember { mutableStateOf(false) }
@@ -288,6 +293,36 @@ fun SettingsScreen(viewModel: SettingsViewModel) {
                     onSelect = viewModel::updateDefaultMode,
                     modifier = Modifier.weight(1f)
                 )
+            }
+
+            SectionHeader(stringResource(R.string.section_updates))
+            Text(
+                stringResource(
+                    R.string.update_current_version,
+                    updateState.currentVersionName,
+                    updateState.currentVersionCode
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Button(
+                onClick = { updateViewModel.checkForUpdates(silentIfUpToDate = false) },
+                enabled = !updateState.isChecking && !updateState.isDownloading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (updateState.isChecking) {
+                    CircularProgressIndicator(
+                        Modifier.size(18.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.update_checking))
+                } else {
+                    Icon(Icons.Default.SystemUpdate, null)
+                    Spacer(Modifier.width(8.dp))
+                    Text(stringResource(R.string.update_check_now))
+                }
             }
 
             Spacer(Modifier.height(80.dp))

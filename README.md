@@ -19,6 +19,7 @@ Android companion client for [Log4OM2](https://www.log4om.com/) that connects di
 | **Station defaults** | Callsign, locator, name, rig, DXCC, default band/mode/RST/power |
 | **GPS** | Optional latitude/longitude for *my* station when saving (if location permission granted) |
 | **Languages** | German (default) and English via Android system language |
+| **Updates** | Checks GitHub Releases on startup and from Settings; install in-app or open browser |
 
 ---
 

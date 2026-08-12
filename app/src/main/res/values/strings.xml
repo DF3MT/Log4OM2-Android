@@ -142,4 +142,22 @@
     <string name="export_share_title">ADIF teilen</string>
     <string name="export_done">ADIF exportiert</string>
     <string name="clear_date">Datum löschen</string>
+
+    <!-- App updates -->
+    <string name="section_updates">App-Updates</string>
+    <string name="update_current_version">Installierte Version: %1$s (%2$d)</string>
+    <string name="update_check_now">Nach Updates suchen</string>
+    <string name="update_checking">Prüfe…</string>
+    <string name="update_up_to_date">Du hast die neueste Version</string>
+    <string name="update_check_failed">Update-Prüfung fehlgeschlagen: %1$s</string>
+    <string name="update_available_title">Update verfügbar</string>
+    <string name="update_available_message">Version %1$s ist verfügbar (aktuell %2$s).</string>
+    <string name="update_release_notes">Änderungen</string>
+    <string name="update_install_now">Jetzt installieren</string>
+    <string name="update_open_browser">Im Browser öffnen</string>
+    <string name="update_later">Später</string>
+    <string name="update_downloading">APK wird heruntergeladen…</string>
+    <string name="update_download_failed">Download fehlgeschlagen: %1$s</string>
+    <string name="update_install_failed">Installation fehlgeschlagen: %1$s</string>
+    <string name="update_allow_unknown_apps">Bitte Installation aus dieser Quelle erlauben, dann erneut „Jetzt installieren“ tippen.</string>
 </resources>

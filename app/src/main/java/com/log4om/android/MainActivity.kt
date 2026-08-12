@@ -21,6 +21,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.log4om.android.data.model.Qso
+import com.log4om.android.ui.components.UpdateAvailableDialog
 import com.log4om.android.ui.screens.LogListScreen
 import com.log4om.android.ui.screens.NewQsoScreen
 import com.log4om.android.ui.screens.SettingsScreen
@@ -61,13 +62,40 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
     val logViewModel:      LogViewModel      = viewModel(factory = factory)
     val newQsoViewModel:   NewQsoViewModel   = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
+    val updateViewModel:   UpdateViewModel   = viewModel(factory = factory)
 
     val navBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStack?.destination?.route
+    val updateState by updateViewModel.state.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     var editQso by remember { mutableStateOf<Qso?>(null) }
 
+    LaunchedEffect(Unit) {
+        updateViewModel.checkForUpdates(silentIfUpToDate = true)
+    }
+
+    val updateMessage = updateState.message?.asString()
+    LaunchedEffect(updateMessage) {
+        updateMessage?.let {
+            snackbarHostState.showSnackbar(it)
+            updateViewModel.clearMessage()
+        }
+    }
+
+    updateState.availableUpdate?.takeIf { updateState.showDialog }?.let { update ->
+        UpdateAvailableDialog(
+            update = update,
+            currentVersionName = updateState.currentVersionName,
+            isDownloading = updateState.isDownloading,
+            onDismiss = updateViewModel::dismissDialog,
+            onOpenBrowser = updateViewModel::openInBrowser,
+            onInstall = updateViewModel::downloadAndInstall
+        )
+    }
+
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             NavigationBar {
                 NAV_ITEMS.forEach { screen ->
@@ -134,7 +162,10 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
                 )
             }
             composable(Screen.Settings.route) {
-                SettingsScreen(viewModel = settingsViewModel)
+                SettingsScreen(
+                    viewModel = settingsViewModel,
+                    updateViewModel = updateViewModel
+                )
             }
         }
     }

@@ -142,4 +142,22 @@
     <string name="export_share_title">Share ADIF</string>
     <string name="export_done">ADIF exported</string>
     <string name="clear_date">Clear date</string>
+
+    <!-- App updates -->
+    <string name="section_updates">App updates</string>
+    <string name="update_current_version">Installed version: %1$s (%2$d)</string>
+    <string name="update_check_now">Check for updates</string>
+    <string name="update_checking">Checking…</string>
+    <string name="update_up_to_date">You are on the latest version</string>
+    <string name="update_check_failed">Update check failed: %1$s</string>
+    <string name="update_available_title">Update available</string>
+    <string name="update_available_message">Version %1$s is available (current %2$s).</string>
+    <string name="update_release_notes">Release notes</string>
+    <string name="update_install_now">Install now</string>
+    <string name="update_open_browser">Open in browser</string>
+    <string name="update_later">Later</string>
+    <string name="update_downloading">Downloading APK…</string>
+    <string name="update_download_failed">Download failed: %1$s</string>
+    <string name="update_install_failed">Install failed: %1$s</string>
+    <string name="update_allow_unknown_apps">Please allow installs from this source, then tap “Install now” again.</string>
 </resources>
