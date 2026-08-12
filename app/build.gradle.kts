@@ -105,6 +105,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.osmdroid.android)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     // MySQL JDBC 5.1.x – Android-kompatibel (8.x referenziert java.sql.SQLType,

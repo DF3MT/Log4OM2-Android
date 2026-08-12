@@ -464,6 +464,34 @@ private fun ActiveFilterChips(
                 label = { Text(stringResource(R.string.filter_chip_dxcc, filter.dxcc)) }
             )
         }
+        if (filter.sotaRef.isNotBlank()) {
+            FilterChip(
+                selected = true,
+                onClick = onOpen,
+                label = { Text(stringResource(R.string.filter_chip_sota, filter.sotaRef)) }
+            )
+        }
+        if (filter.iota.isNotBlank()) {
+            FilterChip(
+                selected = true,
+                onClick = onOpen,
+                label = { Text(stringResource(R.string.filter_chip_iota, filter.iota)) }
+            )
+        }
+        if (filter.potaRef.isNotBlank()) {
+            FilterChip(
+                selected = true,
+                onClick = onOpen,
+                label = { Text(stringResource(R.string.filter_chip_pota, filter.potaRef)) }
+            )
+        }
+        if (filter.wwffRef.isNotBlank()) {
+            FilterChip(
+                selected = true,
+                onClick = onOpen,
+                label = { Text(stringResource(R.string.filter_chip_wwff, filter.wwffRef)) }
+            )
+        }
         TextButton(onClick = onClear) {
             Text(stringResource(R.string.filter_reset))
         }
@@ -485,6 +513,10 @@ private fun FilterBottomSheet(
     var dateTo by remember { mutableStateOf(initial.dateTo) }
     var country by remember { mutableStateOf(initial.country) }
     var dxcc by remember { mutableStateOf(initial.dxcc) }
+    var sotaRef by remember { mutableStateOf(initial.sotaRef) }
+    var iota by remember { mutableStateOf(initial.iota) }
+    var potaRef by remember { mutableStateOf(initial.potaRef) }
+    var wwffRef by remember { mutableStateOf(initial.wwffRef) }
     var pickingFrom by remember { mutableStateOf(false) }
     var pickingTo by remember { mutableStateOf(false) }
 
@@ -566,6 +598,26 @@ private fun FilterBottomSheet(
                 onValueChange = { dxcc = it.filter(Char::isDigit).take(4) },
                 keyboardType = KeyboardType.Number
             )
+            LabeledTextField(
+                label = stringResource(R.string.sota_ref),
+                value = sotaRef,
+                onValueChange = { sotaRef = it.uppercase() }
+            )
+            LabeledTextField(
+                label = stringResource(R.string.iota),
+                value = iota,
+                onValueChange = { iota = it.uppercase() }
+            )
+            LabeledTextField(
+                label = stringResource(R.string.pota_ref),
+                value = potaRef,
+                onValueChange = { potaRef = it.uppercase() }
+            )
+            LabeledTextField(
+                label = stringResource(R.string.wwff_ref),
+                value = wwffRef,
+                onValueChange = { wwffRef = it.uppercase() }
+            )
             Row(
                 Modifier.fillMaxWidth().padding(vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -583,7 +635,11 @@ private fun FilterBottomSheet(
                                 dateFrom = dateFrom,
                                 dateTo = dateTo,
                                 country = country.trim(),
-                                dxcc = dxcc.trim()
+                                dxcc = dxcc.trim(),
+                                sotaRef = sotaRef.trim(),
+                                iota = iota.trim(),
+                                potaRef = potaRef.trim(),
+                                wwffRef = wwffRef.trim()
                             )
                         )
                     },

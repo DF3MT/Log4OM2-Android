@@ -10,11 +10,19 @@ import com.log4om.android.data.prefs.AppPrefs
 import com.log4om.android.data.repository.LogRepository
 import com.log4om.android.ui.util.UiText
 import com.log4om.android.util.AmateurRadio
+import com.log4om.android.util.GridLocator
 import com.log4om.android.util.LocationHelper
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
+
+enum class DxccNeededStatus {
+    UNKNOWN,
+    NEW_DXCC,
+    NEW_ON_BAND,
+    WORKED
+}
 
 data class QsoFormState(
     val qsoid: Long = System.currentTimeMillis(),
@@ -41,6 +49,18 @@ data class QsoFormState(
     val contestid: String = "",
     val satmode: String = "",
     val satname: String = "",
+    val sotaRef: String = "",
+    val iota: String = "",
+    val potaRef: String = "",
+    val wwffRef: String = "",
+    val contactLat: Double? = null,
+    val contactLon: Double? = null,
+    val stationLat: Double? = null,
+    val stationLon: Double? = null,
+    val distanceKm: Double? = null,
+    val bearingDeg: Double? = null,
+    val dxccNeeded: DxccNeededStatus = DxccNeededStatus.UNKNOWN,
+    val lookupSource: String = "",
     val qrzData: QrzCallsignData? = null,
     val qrzLoading: Boolean = false,
     val qrzError: UiText? = null,
@@ -61,6 +81,10 @@ class NewQsoViewModel(
 
     private val _pastQsos = MutableStateFlow<List<Qso>>(emptyList())
     val pastQsos: StateFlow<List<Qso>> = _pastQsos.asStateFlow()
+
+    private var workedDxcc: Set<Int> = emptySet()
+    private var workedDxccBands: Set<Pair<Int, String>> = emptySet()
+    private var myGridCached: String = ""
 
     @OptIn(FlowPreview::class)
     private fun observeCallsignForHistory() {
@@ -106,6 +130,7 @@ class NewQsoViewModel(
             val band    = prefs.defaultBand.first()
             val mode    = prefs.defaultMode.first()
             val txpwr   = prefs.defaultTxpwr.first()
+            myGridCached = prefs.myGridsquare.first()
             _form.update {
                 it.copy(
                     rstsent = rstSent,
@@ -114,6 +139,73 @@ class NewQsoViewModel(
                     mode    = mode,
                     txpwr   = txpwr,
                     freq    = AmateurRadio.freqForBand(band).ifBlank { it.freq }
+                )
+            }
+            refreshDxccCache()
+        }
+    }
+
+    private suspend fun refreshDxccCache() {
+        repository.getWorkedDxccIds().onSuccess { workedDxcc = it }
+        repository.getWorkedDxccBands().onSuccess { workedDxccBands = it }
+        refreshDxccNeeded()
+    }
+
+    private fun refreshDxccNeeded() {
+        val dxcc = _form.value.dxcc.toIntOrNull() ?: 0
+        val band = _form.value.band
+        val status = when {
+            dxcc <= 0 -> DxccNeededStatus.UNKNOWN
+            dxcc !in workedDxcc -> DxccNeededStatus.NEW_DXCC
+            (dxcc to band) !in workedDxccBands -> DxccNeededStatus.NEW_ON_BAND
+            else -> DxccNeededStatus.WORKED
+        }
+        _form.update { it.copy(dxccNeeded = status) }
+    }
+
+    private fun refreshPathInfo(
+        grid: String = _form.value.gridsquare,
+        lat: Double? = _form.value.contactLat,
+        lon: Double? = _form.value.contactLon
+    ) {
+        val my = myGridCached.ifBlank { null }
+        val theirPoint = when {
+            lat != null && lon != null -> GridLocator.LatLon(lat, lon)
+            else -> GridLocator.parse(grid)
+        }
+        val myPoint = my?.let { GridLocator.parse(it) }
+        if (myPoint != null && theirPoint != null) {
+            val path = GridLocator.path(myPoint, theirPoint)
+            _form.update {
+                it.copy(
+                    contactLat = theirPoint.lat,
+                    contactLon = theirPoint.lon,
+                    stationLat = myPoint.lat,
+                    stationLon = myPoint.lon,
+                    distanceKm = path.distanceKm,
+                    bearingDeg = path.bearingDeg
+                )
+            }
+        } else if (theirPoint != null) {
+            _form.update {
+                it.copy(
+                    contactLat = theirPoint.lat,
+                    contactLon = theirPoint.lon,
+                    stationLat = myPoint?.lat,
+                    stationLon = myPoint?.lon,
+                    distanceKm = null,
+                    bearingDeg = null
+                )
+            }
+        } else {
+            _form.update {
+                it.copy(
+                    contactLat = lat,
+                    contactLon = lon,
+                    stationLat = myPoint?.lat,
+                    stationLon = myPoint?.lon,
+                    distanceKm = null,
+                    bearingDeg = null
                 )
             }
         }
@@ -145,16 +237,28 @@ class NewQsoViewModel(
             contestid  = qso.contestid,
             satmode    = qso.satmode,
             satname    = qso.satname,
+            sotaRef    = qso.sotaRef,
+            iota       = qso.iota,
+            potaRef    = qso.potaRef,
+            wwffRef    = qso.wwffRef,
+            contactLat = qso.lat,
+            contactLon = qso.lon,
+            distanceKm = qso.distance,
             isEditMode = true
         )
+        refreshPathInfo(qso.gridsquare, qso.lat, qso.lon)
+        refreshDxccNeeded()
     }
 
     fun updateCallsign(v: String) = _form.update {
-        it.copy(callsign = v.uppercase().take(50), qrzData = null, qrzError = null)
+        it.copy(callsign = v.uppercase().take(50), qrzData = null, qrzError = null, lookupSource = "")
     }
 
-    fun updateBand(v: String) = _form.update {
-        it.copy(band = v, freq = AmateurRadio.freqForBand(v).ifBlank { it.freq })
+    fun updateBand(v: String) {
+        _form.update {
+            it.copy(band = v, freq = AmateurRadio.freqForBand(v).ifBlank { it.freq })
+        }
+        refreshDxccNeeded()
     }
 
     fun updateMode(v: String) = _form.update {
@@ -170,10 +274,16 @@ class NewQsoViewModel(
     fun updateAddress(v: String)      = _form.update { it.copy(address = v) }
     fun updateQth(v: String)          = _form.update { it.copy(qth = v) }
     fun updateCountry(v: String)      = _form.update { it.copy(country = v) }
-    fun updateDxcc(v: String)         = _form.update { it.copy(dxcc = v) }
+    fun updateDxcc(v: String) {
+        _form.update { it.copy(dxcc = v) }
+        refreshDxccNeeded()
+    }
     fun updateCqzone(v: String)       = _form.update { it.copy(cqzone = v) }
     fun updateItuzone(v: String)      = _form.update { it.copy(ituzone = v) }
-    fun updateGridsquare(v: String)   = _form.update { it.copy(gridsquare = v.uppercase().take(10)) }
+    fun updateGridsquare(v: String) {
+        _form.update { it.copy(gridsquare = v.uppercase().take(10)) }
+        refreshPathInfo(grid = v.uppercase().take(10))
+    }
     fun updateCont(v: String)         = _form.update { it.copy(cont = v) }
     fun updateComment(v: String)      = _form.update { it.copy(comment = v) }
     fun updateNotes(v: String)        = _form.update { it.copy(notes = v) }
@@ -182,6 +292,10 @@ class NewQsoViewModel(
     fun updateContestid(v: String)    = _form.update { it.copy(contestid = v) }
     fun updateSatmode(v: String)      = _form.update { it.copy(satmode = v) }
     fun updateSatname(v: String)      = _form.update { it.copy(satname = v) }
+    fun updateSotaRef(v: String)      = _form.update { it.copy(sotaRef = v.uppercase().take(20)) }
+    fun updateIota(v: String)         = _form.update { it.copy(iota = v.uppercase().take(20)) }
+    fun updatePotaRef(v: String)      = _form.update { it.copy(potaRef = v.uppercase().take(20)) }
+    fun updateWwffRef(v: String)      = _form.update { it.copy(wwffRef = v.uppercase().take(20)) }
     fun dismissQrzError()             = _form.update { it.copy(qrzError = null) }
     fun dismissSaveError()            = _form.update { it.copy(saveError = null) }
 
@@ -193,7 +307,7 @@ class NewQsoViewModel(
             repository.lookupCallsign(call).fold(
                 onSuccess = { data ->
                     val apiError = data.error
-                    if (apiError != null) {
+                    if (apiError != null && !data.hasUsefulData) {
                         _form.update {
                             it.copy(
                                 qrzLoading = false,
@@ -201,10 +315,13 @@ class NewQsoViewModel(
                             )
                         }
                     } else {
+                        val lat = data.lat.toDoubleOrNull()
+                        val lon = data.lon.toDoubleOrNull()
                         _form.update { s ->
                             s.copy(
                                 qrzLoading = false,
                                 qrzData    = data,
+                                lookupSource = data.source,
                                 name       = data.name.ifBlank { s.name },
                                 address    = data.addr1.ifBlank { s.address },
                                 qth        = data.addr2.ifBlank { s.qth },
@@ -213,9 +330,17 @@ class NewQsoViewModel(
                                 dxcc       = data.dxcc.ifBlank { s.dxcc },
                                 cqzone     = data.cqzone.ifBlank { s.cqzone },
                                 ituzone    = data.ituzone.ifBlank { s.ituzone },
-                                cont       = data.continent.ifBlank { s.cont }
+                                cont       = data.continent.ifBlank { s.cont },
+                                contactLat = lat ?: s.contactLat,
+                                contactLon = lon ?: s.contactLon
                             )
                         }
+                        refreshPathInfo(
+                            grid = _form.value.gridsquare,
+                            lat = _form.value.contactLat,
+                            lon = _form.value.contactLon
+                        )
+                        refreshDxccNeeded()
                     }
                 },
                 onFailure = { e ->
@@ -270,6 +395,9 @@ class NewQsoViewModel(
                 cqzone          = s.cqzone.toIntOrNull(),
                 ituzone         = s.ituzone.toIntOrNull(),
                 gridsquare      = s.gridsquare,
+                lat             = s.contactLat,
+                lon             = s.contactLon,
+                distance        = s.distanceKm,
                 cont            = s.cont,
                 comment         = s.comment,
                 notes           = s.notes,
@@ -287,13 +415,24 @@ class NewQsoViewModel(
                 satmode         = s.satmode,
                 satname         = s.satname,
                 satelliteqso    = if (s.satname.isNotBlank()) 1 else 0,
+                sotaRef         = s.sotaRef,
+                iota            = s.iota,
+                potaRef         = s.potaRef,
+                wwffRef         = s.wwffRef,
                 programid       = "Log4OM Android",
                 programversion  = "1.0"
             )
 
             val result = if (s.isEditMode) repository.updateQso(qso) else repository.insertQso(qso)
             result.fold(
-                onSuccess = { _form.update { it.copy(isSaving = false, saveSuccess = true) } },
+                onSuccess = {
+                    val dxcc = qso.dxcc
+                    if (dxcc > 0) {
+                        workedDxcc = workedDxcc + dxcc
+                        workedDxccBands = workedDxccBands + (dxcc to qso.band)
+                    }
+                    _form.update { it.copy(isSaving = false, saveSuccess = true) }
+                },
                 onFailure = { e ->
                     _form.update {
                         it.copy(
@@ -315,6 +454,7 @@ class NewQsoViewModel(
             val band    = prefs.defaultBand.first()
             val mode    = prefs.defaultMode.first()
             val txpwr   = prefs.defaultTxpwr.first()
+            myGridCached = prefs.myGridsquare.first()
             _form.value = QsoFormState(
                 qsoid   = System.currentTimeMillis(),
                 rstsent = rstSent,

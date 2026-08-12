@@ -60,6 +60,13 @@ object AdifMapper {
             classField      = rec["CLASS"].orEmpty(),
             srxstring       = rec["SRX_STRING"].orEmpty(),
             stxstring       = rec["STX_STRING"].orEmpty(),
+            sotaRef         = rec["SOTA_REF"].orEmpty(),
+            iota            = rec["IOTA"].orEmpty(),
+            potaRef         = rec["POTA_REF"].orEmpty(),
+            wwffRef         = rec["WWFF_REF"].orEmpty(),
+            lat             = rec["LAT"]?.toDoubleOrNull(),
+            lon             = rec["LON"]?.toDoubleOrNull(),
+            distance        = rec["DISTANCE"]?.toDoubleOrNull(),
             programid       = rec["PROGRAMID"].ifBlankOrNull("Log4OM Android"),
             programversion  = rec["PROGRAMVERSION"].ifBlankOrNull("1.0")
         )

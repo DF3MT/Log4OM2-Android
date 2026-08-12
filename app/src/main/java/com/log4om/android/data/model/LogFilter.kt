@@ -13,7 +13,11 @@ data class LogFilter(
     val dateFrom: LocalDate? = null,
     val dateTo: LocalDate? = null,
     val country: String = "",
-    val dxcc: String = ""
+    val dxcc: String = "",
+    val sotaRef: String = "",
+    val iota: String = "",
+    val potaRef: String = "",
+    val wwffRef: String = ""
 ) {
     val isActive: Boolean
         get() = callsign.isNotBlank() ||
@@ -22,7 +26,11 @@ data class LogFilter(
             dateFrom != null ||
             dateTo != null ||
             country.isNotBlank() ||
-            dxcc.isNotBlank()
+            dxcc.isNotBlank() ||
+            sotaRef.isNotBlank() ||
+            iota.isNotBlank() ||
+            potaRef.isNotBlank() ||
+            wwffRef.isNotBlank()
 
     val dxccNumber: Int? get() = dxcc.trim().toIntOrNull()?.takeIf { it > 0 }
 }

@@ -62,6 +62,13 @@ object AdifWriter {
         appendField("CLASS", q.classField)
         appendField("SRX_STRING", q.srxstring)
         appendField("STX_STRING", q.stxstring)
+        appendField("SOTA_REF", q.sotaRef)
+        appendField("IOTA", q.iota)
+        appendField("POTA_REF", q.potaRef)
+        appendField("WWFF_REF", q.wwffRef)
+        q.lat?.let { appendField("LAT", it.toString()) }
+        q.lon?.let { appendField("LON", it.toString()) }
+        q.distance?.let { appendField("DISTANCE", it.toString()) }
     }
 
     private fun StringBuilder.appendField(name: String, value: String?) {

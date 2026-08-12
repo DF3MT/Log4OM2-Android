@@ -9,6 +9,8 @@ import com.log4om.android.data.db.QsoDao
 import com.log4om.android.data.model.LogFilter
 import com.log4om.android.data.model.Qso
 import com.log4om.android.data.model.QrzCallsignData
+import com.log4om.android.data.network.ClubLogApiService
+import com.log4om.android.data.network.HamQthApiService
 import com.log4om.android.data.network.QrzApiService
 import com.log4om.android.data.prefs.AppPrefs
 import kotlinx.coroutines.flow.first
@@ -18,7 +20,9 @@ class LogRepository(
     val prefs: AppPrefs,
     private val dbHelper: DatabaseHelper,
     private val qsoDao: QsoDao,
-    private val qrzApiService: QrzApiService
+    private val qrzApiService: QrzApiService,
+    private val hamQthApiService: HamQthApiService,
+    private val clubLogApiService: ClubLogApiService
 ) {
     private suspend fun ensureDbConfigured() {
         dbHelper.configure(
@@ -35,6 +39,15 @@ class LogRepository(
             user     = prefs.qrzUser.first(),
             password = prefs.qrzPassword.first()
         )
+    }
+
+    private suspend fun ensureLookupConfigured() {
+        ensureQrzConfigured()
+        hamQthApiService.configure(
+            user     = prefs.hamqthUser.first(),
+            password = prefs.hamqthPassword.first()
+        )
+        clubLogApiService.configure(prefs.clublogApiKey.first())
     }
 
     suspend fun testDbConnection(): Result<Unit> {
@@ -97,9 +110,102 @@ class LogRepository(
         return qsoDao.getQsoCount()
     }
 
+    /**
+     * Multi-source lookup: QRZ → HamQTH → Club Log (DXCC-only fill).
+     * Returns the richest successful payload; last error if all fail.
+     */
     suspend fun lookupCallsign(callsign: String): Result<QrzCallsignData> {
-        ensureQrzConfigured()
-        return qrzApiService.lookupCallsign(callsign)
+        ensureLookupConfigured()
+        val call = callsign.trim()
+        if (call.isBlank()) return Result.failure(IllegalArgumentException("Empty callsign"))
+
+        var best: QrzCallsignData? = null
+        var lastError: String? = null
+        val qrzUser = prefs.qrzUser.first()
+        if (qrzUser.isNotBlank()) {
+            qrzApiService.lookupCallsign(call).fold(
+                onSuccess = { data ->
+                    if (data.hasUsefulData) best = data
+                    else lastError = data.error ?: lastError
+                },
+                onFailure = { lastError = it.message ?: lastError }
+            )
+        }
+
+        if (best == null || !best!!.hasUsefulData) {
+            if (hamQthApiService.isConfigured) {
+                hamQthApiService.lookupCallsign(call).fold(
+                    onSuccess = { data ->
+                        if (data.hasUsefulData) {
+                            best = mergeLookup(best, data)
+                        } else lastError = data.error ?: lastError
+                    },
+                    onFailure = { lastError = it.message ?: lastError }
+                )
+            }
+        } else if (hamQthApiService.isConfigured &&
+            (best!!.name.isBlank() || best!!.grid.isBlank() || best!!.dxcc.isBlank())
+        ) {
+            hamQthApiService.lookupCallsign(call).onSuccess { data ->
+                if (data.hasUsefulData) best = mergeLookup(best, data)
+            }
+        }
+
+        val current = best
+        if (clubLogApiService.isConfigured &&
+            (current == null || current.dxcc.isBlank() || current.country.isBlank())
+        ) {
+            clubLogApiService.lookupDxcc(call).onSuccess { data ->
+                best = mergeLookup(best, data)
+            }.onFailure { lastError = it.message ?: lastError }
+        }
+
+        val result = best
+        return when {
+            result != null && result.hasUsefulData -> Result.success(result)
+            result != null && result.error != null -> Result.success(result)
+            else -> Result.failure(Exception(lastError ?: "Callsign lookup failed"))
+        }
+    }
+
+    private fun mergeLookup(primary: QrzCallsignData?, secondary: QrzCallsignData): QrzCallsignData {
+        if (primary == null) return secondary
+        fun pick(a: String, b: String) = a.ifBlank { b }
+        return primary.copy(
+            call = pick(primary.call, secondary.call),
+            fname = pick(primary.fname, secondary.fname),
+            name = pick(primary.name, secondary.name),
+            addr1 = pick(primary.addr1, secondary.addr1),
+            addr2 = pick(primary.addr2, secondary.addr2),
+            state = pick(primary.state, secondary.state),
+            country = pick(primary.country, secondary.country),
+            cqzone = pick(primary.cqzone, secondary.cqzone),
+            ituzone = pick(primary.ituzone, secondary.ituzone),
+            lat = pick(primary.lat, secondary.lat),
+            lon = pick(primary.lon, secondary.lon),
+            grid = pick(primary.grid, secondary.grid),
+            email = pick(primary.email, secondary.email),
+            dxcc = pick(primary.dxcc, secondary.dxcc),
+            continent = pick(primary.continent, secondary.continent),
+            pfx = pick(primary.pfx, secondary.pfx),
+            bio = pick(primary.bio, secondary.bio),
+            image = pick(primary.image, secondary.image),
+            error = null,
+            source = listOf(primary.source, secondary.source)
+                .filter { it.isNotBlank() }
+                .distinct()
+                .joinToString("+")
+        )
+    }
+
+    suspend fun getWorkedDxccIds(): Result<Set<Int>> {
+        ensureDbConfigured()
+        return qsoDao.getWorkedDxccIds()
+    }
+
+    suspend fun getWorkedDxccBands(): Result<Set<Pair<Int, String>>> {
+        ensureDbConfigured()
+        return qsoDao.getWorkedDxccBands()
     }
 
     suspend fun getQsosByCallsign(callsign: String, limit: Int = 15): Result<List<Qso>> {

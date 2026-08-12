@@ -80,6 +80,32 @@ class QsoDao(private val db: DatabaseHelper) {
 
     suspend fun getQsoCount(): Result<Int> = countFiltered(LogFilter())
 
+    /** Distinct DXCC entity IDs already present in the log (dxcc > 0). */
+    suspend fun getWorkedDxccIds(): Result<Set<Int>> =
+        db.withConnection { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery("SELECT DISTINCT dxcc FROM log WHERE dxcc > 0").use { rs ->
+                    buildSet {
+                        while (rs.next()) add(rs.getInt(1))
+                    }
+                }
+            }
+        }
+
+    /** Worked (dxcc, band) pairs for “new on band” hints. */
+    suspend fun getWorkedDxccBands(): Result<Set<Pair<Int, String>>> =
+        db.withConnection { conn ->
+            conn.createStatement().use { stmt ->
+                stmt.executeQuery(
+                    "SELECT DISTINCT dxcc, band FROM log WHERE dxcc > 0 AND band IS NOT NULL AND band <> ''"
+                ).use { rs ->
+                    buildSet {
+                        while (rs.next()) add(rs.getInt(1) to rs.getString(2))
+                    }
+                }
+            }
+        }
+
     suspend fun insertQso(qso: Qso): Result<Boolean> =
         db.withConnection { conn ->
             conn.prepareStatement(INSERT_SQL).use { stmt ->
@@ -169,7 +195,9 @@ class QsoDao(private val db: DatabaseHelper) {
             sig, siginfo, mysig, mysiginfo,
             mycity, mycnty, mycountry, mypostalcode, mystate, mystreet,
             mydxcc, mylat, mylon,
-            forceinit, mufday, reliability, signaltonoiseratio, sunspots
+            forceinit, mufday, reliability, signaltonoiseratio, sunspots,
+            lat, lon, distance,
+            sota_ref, iota, pota_ref, wwff_ref
         ) VALUES (
             ?,?,?,?,?,
             ?,?,?,?,
@@ -187,7 +215,9 @@ class QsoDao(private val db: DatabaseHelper) {
             ?,?,?,?,
             ?,?,?,?,?,?,
             ?,?,?,
-            ?,?,?,?,?
+            ?,?,?,?,?,
+            ?,?,?,
+            ?,?,?,?
         )
     """.trimIndent()
 
@@ -206,7 +236,9 @@ class QsoDao(private val db: DatabaseHelper) {
             qslvia=?, qslmsg=?, eqcall=?,
             contactedop=?, srxstring=?, stxstring=?,
             satmode=?, satname=?, satelliteqso=?,
-            operator=?, sig=?, siginfo=?
+            operator=?, sig=?, siginfo=?,
+            lat=?, lon=?, distance=?,
+            sota_ref=?, iota=?, pota_ref=?, wwff_ref=?
         WHERE qsoid=?
     """.trimIndent()
 
@@ -284,6 +316,13 @@ class QsoDao(private val db: DatabaseHelper) {
         setDouble(i++, q.reliability)
         setDouble(i++, q.signaltonoiseratio)
         setInt(i++, q.sunspots)
+        if (q.lat != null) setDouble(i++, q.lat) else setNull(i++, Types.DECIMAL)
+        if (q.lon != null) setDouble(i++, q.lon) else setNull(i++, Types.DECIMAL)
+        if (q.distance != null) setDouble(i++, q.distance) else setNull(i++, Types.DECIMAL)
+        setString(i++, q.sotaRef)
+        setString(i++, q.iota)
+        setString(i++, q.potaRef)
+        setString(i++, q.wwffRef)
     }
 
     private fun java.sql.PreparedStatement.bindQsoUpdate(q: Qso) {
@@ -335,6 +374,13 @@ class QsoDao(private val db: DatabaseHelper) {
         setString(i++, q.operator)
         setString(i++, q.sig)
         setString(i++, q.siginfo)
+        if (q.lat != null) setDouble(i++, q.lat) else setNull(i++, Types.DECIMAL)
+        if (q.lon != null) setDouble(i++, q.lon) else setNull(i++, Types.DECIMAL)
+        if (q.distance != null) setDouble(i++, q.distance) else setNull(i++, Types.DECIMAL)
+        setString(i++, q.sotaRef)
+        setString(i++, q.iota)
+        setString(i++, q.potaRef)
+        setString(i++, q.wwffRef)
         setLong(i, q.qsoid)
     }
 
@@ -350,6 +396,12 @@ class QsoDao(private val db: DatabaseHelper) {
         LocalDateTime.parse(this.toString().take(19), JDBC_FMT)
 
     private fun ResultSet.str(col: String): String = getString(col) ?: ""
+    private fun ResultSet.softStr(col: String): String =
+        try {
+            getString(col) ?: ""
+        } catch (_: Exception) {
+            ""
+        }
     private fun ResultSet.optInt(col: String): Int? = getObject(col)?.let { (it as Number).toInt() }
     private fun ResultSet.optDouble(col: String): Double? = getObject(col)?.let { (it as Number).toDouble() }
     private fun ResultSet.optDateTime(col: String): LocalDateTime? = getTimestamp(col)?.toLocalDT()
@@ -437,6 +489,10 @@ class QsoDao(private val db: DatabaseHelper) {
         sfi              = optDouble("sfi"),
         sig              = str("sig"),
         siginfo          = str("siginfo"),
+        sotaRef          = softStr("sota_ref"),
+        iota             = softStr("iota"),
+        potaRef          = softStr("pota_ref"),
+        wwffRef          = softStr("wwff_ref"),
         stationcallsign  = str("stationcallsign"),
         srx              = optDouble("srx"),
         srxstring        = str("srxstring"),

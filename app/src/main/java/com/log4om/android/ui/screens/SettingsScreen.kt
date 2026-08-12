@@ -36,6 +36,7 @@ fun SettingsScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     var showDbPw   by remember { mutableStateOf(false) }
     var showQrzPw  by remember { mutableStateOf(false) }
+    var showHamqthPw by remember { mutableStateOf(false) }
 
     val settingsSaved = stringResource(R.string.settings_saved)
     LaunchedEffect(state.saveSuccess) {
@@ -220,6 +221,47 @@ fun SettingsScreen(
                         )
                     }
                 }
+            )
+
+            SectionHeader(stringResource(R.string.section_hamqth))
+            Text(
+                stringResource(R.string.hamqth_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            LabeledTextField(
+                label = stringResource(R.string.hamqth_user),
+                value = state.hamqthUser,
+                onValueChange = viewModel::updateHamqthUser
+            )
+            OutlinedTextField(
+                value = state.hamqthPassword,
+                onValueChange = viewModel::updateHamqthPassword,
+                label = { Text(stringResource(R.string.hamqth_password)) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = if (showHamqthPw) VisualTransformation.None else PasswordVisualTransformation(),
+                trailingIcon = {
+                    IconButton(onClick = { showHamqthPw = !showHamqthPw }) {
+                        Icon(
+                            if (showHamqthPw) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                            stringResource(
+                                if (showHamqthPw) R.string.hide_password else R.string.show_password
+                            )
+                        )
+                    }
+                }
+            )
+
+            SectionHeader(stringResource(R.string.section_clublog))
+            Text(
+                stringResource(R.string.clublog_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            LabeledTextField(
+                label = stringResource(R.string.clublog_api_key),
+                value = state.clublogApiKey,
+                onValueChange = viewModel::updateClublogApiKey
             )
 
             SectionHeader(stringResource(R.string.section_adif))

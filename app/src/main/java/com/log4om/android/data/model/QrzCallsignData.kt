@@ -19,8 +19,15 @@ data class QrzCallsignData(
     val pfx: String = "",
     val bio: String = "",
     val image: String = "",
-    val error: String? = null
+    val error: String? = null,
+    /** QRZ | HamQTH | Club Log */
+    val source: String = "QRZ"
 ) {
     val fullName: String get() = listOf(fname, name).filter { it.isNotBlank() }.joinToString(" ")
     val cityCountry: String get() = listOf(addr2, country).filter { it.isNotBlank() }.joinToString(", ")
+    val hasUsefulData: Boolean
+        get() = error == null && (
+            name.isNotBlank() || country.isNotBlank() || grid.isNotBlank() ||
+                dxcc.isNotBlank() || lat.isNotBlank()
+            )
 }

@@ -135,7 +135,8 @@ class QrzApiService {
             pfx       = fields["pfx"] ?: "",
             bio       = fields["bio"] ?: "",
             image     = fields["image"] ?: "",
-            error     = errorMsg
+            error     = errorMsg,
+            source    = "QRZ"
         )
     }
 }

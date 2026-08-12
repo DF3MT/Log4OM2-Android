@@ -18,9 +18,12 @@ import com.log4om.android.R
 import com.log4om.android.data.model.Qso
 import com.log4om.android.ui.components.DropdownField
 import com.log4om.android.ui.components.LabeledTextField
+import com.log4om.android.ui.components.OsmMiniMap
 import com.log4om.android.ui.components.SectionHeader
+import com.log4om.android.ui.viewmodel.DxccNeededStatus
 import com.log4om.android.ui.viewmodel.NewQsoViewModel
 import com.log4om.android.util.AmateurRadio
+import com.log4om.android.util.GridLocator
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -155,7 +158,7 @@ fun NewQsoScreen(
                 }
             }
 
-            form.qrzData?.takeIf { it.error == null }?.let { qrz ->
+            form.qrzData?.takeIf { it.hasUsefulData }?.let { qrz ->
                 Card(
                     colors = CardDefaults.cardColors(
                         containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -168,6 +171,13 @@ fun NewQsoScreen(
                         Icon(Icons.Default.Person, null, tint = MaterialTheme.colorScheme.secondary)
                         Spacer(Modifier.width(8.dp))
                         Column {
+                            if (form.lookupSource.isNotBlank()) {
+                                Text(
+                                    stringResource(R.string.lookup_source, form.lookupSource),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                                )
+                            }
                             if (qrz.name.isNotBlank()) {
                                 Text(qrz.name, fontWeight = FontWeight.SemiBold)
                             }
@@ -190,6 +200,37 @@ fun NewQsoScreen(
                         }
                     }
                 }
+            }
+
+            when (form.dxccNeeded) {
+                DxccNeededStatus.NEW_DXCC -> AssistChip(
+                    onClick = {},
+                    label = { Text(stringResource(R.string.dxcc_new)) },
+                    leadingIcon = { Icon(Icons.Default.Star, null, Modifier.size(18.dp)) }
+                )
+                DxccNeededStatus.NEW_ON_BAND -> AssistChip(
+                    onClick = {},
+                    label = { Text(stringResource(R.string.dxcc_new_band)) },
+                    leadingIcon = { Icon(Icons.Default.NewReleases, null, Modifier.size(18.dp)) }
+                )
+                DxccNeededStatus.WORKED -> AssistChip(
+                    onClick = {},
+                    label = { Text(stringResource(R.string.dxcc_worked)) },
+                    leadingIcon = { Icon(Icons.Default.CheckCircle, null, Modifier.size(18.dp)) }
+                )
+                DxccNeededStatus.UNKNOWN -> Unit
+            }
+
+            if (form.distanceKm != null || form.bearingDeg != null || form.contactLat != null) {
+                PathInfoCard(
+                    distanceKm = form.distanceKm,
+                    bearingDeg = form.bearingDeg,
+                    lat = form.contactLat,
+                    lon = form.contactLon,
+                    stationLat = form.stationLat,
+                    stationLon = form.stationLon,
+                    callsign = form.callsign
+                )
             }
 
             if (pastQsos.isNotEmpty()) {
@@ -321,6 +362,41 @@ fun NewQsoScreen(
                 )
             }
 
+            SectionHeader(stringResource(R.string.section_awards))
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LabeledTextField(
+                    stringResource(R.string.sota_ref),
+                    form.sotaRef,
+                    viewModel::updateSotaRef,
+                    modifier = Modifier.weight(1f)
+                )
+                LabeledTextField(
+                    stringResource(R.string.iota),
+                    form.iota,
+                    viewModel::updateIota,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                LabeledTextField(
+                    stringResource(R.string.pota_ref),
+                    form.potaRef,
+                    viewModel::updatePotaRef,
+                    modifier = Modifier.weight(1f)
+                )
+                LabeledTextField(
+                    stringResource(R.string.wwff_ref),
+                    form.wwffRef,
+                    viewModel::updateWwffRef,
+                    modifier = Modifier.weight(1f)
+                )
+            }
             SectionHeader(stringResource(R.string.section_extra))
             DropdownField(
                 label = stringResource(R.string.prop_mode),
@@ -349,6 +425,63 @@ fun NewQsoScreen(
             )
 
             Spacer(Modifier.height(16.dp))
+        }
+    }
+}
+
+@Composable
+private fun PathInfoCard(
+    distanceKm: Double?,
+    bearingDeg: Double?,
+    lat: Double?,
+    lon: Double?,
+    stationLat: Double? = null,
+    stationLon: Double? = null,
+    callsign: String = ""
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer
+        )
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                stringResource(R.string.path_title),
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.labelLarge
+            )
+            val bits = listOfNotNull(
+                distanceKm?.let { GridLocator.formatDistanceKm(it) },
+                bearingDeg?.let {
+                    stringResource(R.string.path_bearing, GridLocator.formatBearing(it))
+                }
+            )
+            if (bits.isNotEmpty()) {
+                Text(
+                    bits.joinToString(" · "),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            if (lat != null && lon != null) {
+                OsmMiniMap(
+                    contactLat = lat,
+                    contactLon = lon,
+                    stationLat = stationLat,
+                    stationLon = stationLon,
+                    contactLabel = callsign.ifBlank { "QSO" },
+                    stationLabel = stringResource(R.string.map_my_qth)
+                )
+                Text(
+                    stringResource(R.string.map_osm_credit),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                )
+            }
         }
     }
 }

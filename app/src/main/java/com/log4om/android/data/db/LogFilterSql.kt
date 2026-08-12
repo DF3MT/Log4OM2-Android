@@ -63,6 +63,26 @@ internal object LogFilterSql {
             parts += "dxcc = ?"
             binders += { stmt, i -> stmt.setInt(i, dxcc); i + 1 }
         }
+        if (filter.sotaRef.isNotBlank()) {
+            parts += "sota_ref LIKE ? ESCAPE '!'"
+            val pattern = toLikePattern(filter.sotaRef.trim().uppercase())
+            binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
+        }
+        if (filter.iota.isNotBlank()) {
+            parts += "iota LIKE ? ESCAPE '!'"
+            val pattern = toLikePattern(filter.iota.trim().uppercase())
+            binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
+        }
+        if (filter.potaRef.isNotBlank()) {
+            parts += "pota_ref LIKE ? ESCAPE '!'"
+            val pattern = toLikePattern(filter.potaRef.trim().uppercase())
+            binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
+        }
+        if (filter.wwffRef.isNotBlank()) {
+            parts += "wwff_ref LIKE ? ESCAPE '!'"
+            val pattern = toLikePattern(filter.wwffRef.trim().uppercase())
+            binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
+        }
 
         val where = if (parts.isEmpty()) "" else "WHERE " + parts.joinToString(" AND ")
         return Built(where, binders)

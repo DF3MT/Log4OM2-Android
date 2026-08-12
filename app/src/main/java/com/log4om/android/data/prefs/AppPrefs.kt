@@ -21,6 +21,10 @@ class AppPrefs(private val context: Context) {
         val QRZ_USER     = stringPreferencesKey("qrz_user")
         val QRZ_PASSWORD = stringPreferencesKey("qrz_password")
 
+        val HAMQTH_USER     = stringPreferencesKey("hamqth_user")
+        val HAMQTH_PASSWORD = stringPreferencesKey("hamqth_password")
+        val CLUBLOG_API_KEY = stringPreferencesKey("clublog_api_key")
+
         val MY_CALLSIGN   = stringPreferencesKey("my_callsign")
         val MY_GRIDSQUARE = stringPreferencesKey("my_gridsquare")
         val MY_NAME       = stringPreferencesKey("my_name")
@@ -42,6 +46,10 @@ class AppPrefs(private val context: Context) {
 
     val qrzUser:     Flow<String> = context.dataStore.data.map { it[QRZ_USER]     ?: "" }
     val qrzPassword: Flow<String> = context.dataStore.data.map { it[QRZ_PASSWORD] ?: "" }
+
+    val hamqthUser:     Flow<String> = context.dataStore.data.map { it[HAMQTH_USER]     ?: "" }
+    val hamqthPassword: Flow<String> = context.dataStore.data.map { it[HAMQTH_PASSWORD] ?: "" }
+    val clublogApiKey:  Flow<String> = context.dataStore.data.map { it[CLUBLOG_API_KEY] ?: "" }
 
     val myCallsign:   Flow<String> = context.dataStore.data.map { it[MY_CALLSIGN]   ?: "" }
     val myGridsquare: Flow<String> = context.dataStore.data.map { it[MY_GRIDSQUARE] ?: "" }

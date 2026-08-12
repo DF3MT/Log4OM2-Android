@@ -19,6 +19,9 @@ data class SettingsState(
     val dbPassword: String = "",
     val qrzUser:     String = "",
     val qrzPassword: String = "",
+    val hamqthUser:     String = "",
+    val hamqthPassword: String = "",
+    val clublogApiKey:  String = "",
     val myCallsign:   String = "",
     val myGridsquare: String = "",
     val myName:       String = "",
@@ -57,6 +60,9 @@ class SettingsViewModel(
                 dbPassword     = prefs.dbPassword.first(),
                 qrzUser        = prefs.qrzUser.first(),
                 qrzPassword    = prefs.qrzPassword.first(),
+                hamqthUser     = prefs.hamqthUser.first(),
+                hamqthPassword = prefs.hamqthPassword.first(),
+                clublogApiKey  = prefs.clublogApiKey.first(),
                 myCallsign     = prefs.myCallsign.first(),
                 myGridsquare   = prefs.myGridsquare.first(),
                 myName         = prefs.myName.first(),
@@ -78,6 +84,9 @@ class SettingsViewModel(
     fun updateDbPassword(v: String)     = _state.update { it.copy(dbPassword = v) }
     fun updateQrzUser(v: String)        = _state.update { it.copy(qrzUser = v) }
     fun updateQrzPassword(v: String)    = _state.update { it.copy(qrzPassword = v) }
+    fun updateHamqthUser(v: String)     = _state.update { it.copy(hamqthUser = v) }
+    fun updateHamqthPassword(v: String) = _state.update { it.copy(hamqthPassword = v) }
+    fun updateClublogApiKey(v: String)  = _state.update { it.copy(clublogApiKey = v) }
     fun updateMyCallsign(v: String)     = _state.update { it.copy(myCallsign = v.uppercase()) }
     fun updateMyGridsquare(v: String)   = _state.update { it.copy(myGridsquare = v.uppercase()) }
     fun updateMyName(v: String)         = _state.update { it.copy(myName = v) }
@@ -137,6 +146,9 @@ class SettingsViewModel(
                 it[AppPrefs.DB_PASSWORD]      = s.dbPassword
                 it[AppPrefs.QRZ_USER]         = s.qrzUser
                 it[AppPrefs.QRZ_PASSWORD]     = s.qrzPassword
+                it[AppPrefs.HAMQTH_USER]      = s.hamqthUser
+                it[AppPrefs.HAMQTH_PASSWORD]  = s.hamqthPassword
+                it[AppPrefs.CLUBLOG_API_KEY]  = s.clublogApiKey
                 it[AppPrefs.MY_CALLSIGN]      = s.myCallsign
                 it[AppPrefs.MY_GRIDSQUARE]    = s.myGridsquare
                 it[AppPrefs.MY_NAME]          = s.myName

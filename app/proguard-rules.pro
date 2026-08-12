@@ -7,3 +7,7 @@
 -dontwarn org.slf4j.**
 
 -keep class com.log4om.android.data.model.** { *; }
+
+# osmdroid
+-keep class org.osmdroid.** { *; }
+-dontwarn org.osmdroid.**
