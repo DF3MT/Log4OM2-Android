@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Log4OM Android</string>
+
+    <!-- Navigation -->
+    <string name="nav_log">Logbook</string>
+    <string name="nav_new_qso">New QSO</string>
+    <string name="nav_settings">Settings</string>
+
+    <!-- Common actions -->
+    <string name="save">Save</string>
+    <string name="save_ellipsis">Saving…</string>
+    <string name="update">Update</string>
+    <string name="cancel">Cancel</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="search">Search</string>
+    <string name="search_placeholder">Search…</string>
+    <string name="refresh">Refresh</string>
+    <string name="retry">Try again</string>
+    <string name="back">Back</string>
+    <string name="ok">OK</string>
+    <string name="options">Options</string>
+    <string name="show_password">Show</string>
+    <string name="hide_password">Hide</string>
+
+    <!-- Log list -->
+    <string name="total_qsos">%d QSOs total</string>
+    <string name="no_qsos">No QSOs yet</string>
+    <string name="connection_error">Connection error</string>
+    <string name="list_end">— End —</string>
+    <string name="delete_qso_title">Delete QSO?</string>
+    <string name="delete_qso_message">Really delete %1$s – %2$s UTC?</string>
+    <string name="error_delete_failed">Delete failed: %1$s</string>
+    <string name="error_connection">Connection error</string>
+
+    <!-- New QSO -->
+    <string name="edit_qso">Edit QSO</string>
+    <string name="clear_form">Clear form</string>
+    <string name="section_station">Contact</string>
+    <string name="section_contact">QSO details</string>
+    <string name="section_rst">RST / Report</string>
+    <string name="section_station_data">Station data</string>
+    <string name="section_extra">Additional info</string>
+    <string name="callsign_required">Callsign *</string>
+    <string name="callsign">Callsign</string>
+    <string name="band">Band</string>
+    <string name="mode">Mode</string>
+    <string name="frequency">Frequency (MHz)</string>
+    <string name="date_time">Date / Time (UTC)</string>
+    <string name="rst_sent">RST Sent</string>
+    <string name="rst_rcvd">RST Rcvd</string>
+    <string name="tx_power">TX Power (W)</string>
+    <string name="name">Name</string>
+    <string name="address">Address</string>
+    <string name="qth">QTH</string>
+    <string name="country">Country</string>
+    <string name="gridsquare">Grid square</string>
+    <string name="continent">Continent</string>
+    <string name="dxcc">DXCC</string>
+    <string name="cq_zone">CQ Zone</string>
+    <string name="itu_zone">ITU Zone</string>
+    <string name="prop_mode">Propagation mode</string>
+    <string name="contest_id">Contest ID</string>
+    <string name="comment">Comment</string>
+    <string name="notes">Notes</string>
+    <string name="past_qsos">Previous QSOs (%d)</string>
+    <string name="past_qsos_more">… +%d more</string>
+    <string name="pick_date">Pick date</string>
+    <string name="pick_time">Pick time</string>
+    <string name="time_utc">Time (UTC)</string>
+    <string name="qso_saved">QSO saved</string>
+    <string name="qso_updated">QSO updated</string>
+    <string name="error_prefix">Error: %1$s</string>
+    <string name="qrz_prefix">QRZ: %1$s</string>
+    <string name="error_callsign_required">Callsign required</string>
+    <string name="error_save_failed">Save failed</string>
+    <string name="error_save_failed_detail">Save failed: %1$s</string>
+    <string name="error_qrz">QRZ error</string>
+    <string name="error_qrz_detail">QRZ error: %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_saved">Settings saved</string>
+    <string name="section_my_station">My station</string>
+    <string name="my_callsign">My callsign</string>
+    <string name="my_gridsquare">My grid square (e.g. JN68)</string>
+    <string name="my_name">My name</string>
+    <string name="my_rig">Transceiver / radio</string>
+    <string name="my_dxcc">My DXCC entity (e.g. 230 = DL)</string>
+    <string name="section_db">MySQL database connection</string>
+    <string name="db_host">Host / IP</string>
+    <string name="db_port">Port</string>
+    <string name="db_name">Database name (e.g. DF3MT)</string>
+    <string name="db_user">Username</string>
+    <string name="db_password">Password</string>
+    <string name="test_connection">Test connection</string>
+    <string name="testing_connection">Testing connection…</string>
+    <string name="db_connected">Connection successful!</string>
+    <string name="db_error">Error</string>
+    <string name="db_error_detail">%1$s</string>
+    <string name="section_qrz">QRZ.com credentials</string>
+    <string name="qrz_hint">Note: The XML API requires a QRZ.com subscription.</string>
+    <string name="qrz_user">QRZ username / callsign</string>
+    <string name="qrz_password">QRZ password</string>
+    <string name="section_adif">ADIF / ADI import</string>
+    <string name="adif_hint">Import an ADIF file into the database. Duplicate QSOs (mode + date + band + callsign) are skipped automatically.</string>
+    <string name="adif_select">Select ADIF file</string>
+    <string name="adif_importing">Importing… (%d)</string>
+    <string name="adif_import_done">Import finished: %1$d imported, %2$d skipped</string>
+    <string name="adif_import_error">Import error: %1$s</string>
+    <string name="section_defaults">Defaults for new QSOs</string>
+    <string name="default_band">Default band</string>
+    <string name="default_mode">Default mode</string>
+</resources>

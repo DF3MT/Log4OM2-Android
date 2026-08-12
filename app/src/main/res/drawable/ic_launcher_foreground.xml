@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Antenna mast -->
+    <path
+        android:pathData="M54,72 L54,36"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- Crossbar -->
+    <path
+        android:pathData="M40,54 L68,54"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+    <!-- Upper crossbar -->
+    <path
+        android:pathData="M45,44 L63,44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round" />
+    <!-- Tip -->
+    <path
+        android:pathData="M50,36 L58,36"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:strokeLineCap="round" />
+    <!-- Signal arcs left -->
+    <path
+        android:pathData="M38,60 Q32,54 38,48"
+        android:strokeColor="#FFB951"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent" />
+    <path
+        android:pathData="M30,65 Q20,54 30,43"
+        android:strokeColor="#FFB951"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent" />
+    <!-- Signal arcs right -->
+    <path
+        android:pathData="M70,60 Q76,54 70,48"
+        android:strokeColor="#FFB951"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent" />
+    <path
+        android:pathData="M78,65 Q88,54 78,43"
+        android:strokeColor="#FFB951"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:fillColor="@android:color/transparent" />
+    <!-- Base -->
+    <path
+        android:pathData="M44,72 L64,72"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:strokeLineCap="round" />
+</vector>

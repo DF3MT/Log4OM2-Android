@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Log4OM Android</string>
+
+    <!-- Navigation -->
+    <string name="nav_log">Logbuch</string>
+    <string name="nav_new_qso">Neues QSO</string>
+    <string name="nav_settings">Einstellungen</string>
+
+    <!-- Common actions -->
+    <string name="save">Speichern</string>
+    <string name="save_ellipsis">Speichern…</string>
+    <string name="update">Update</string>
+    <string name="cancel">Abbrechen</string>
+    <string name="delete">Löschen</string>
+    <string name="edit">Bearbeiten</string>
+    <string name="search">Suchen</string>
+    <string name="search_placeholder">Suche…</string>
+    <string name="refresh">Aktualisieren</string>
+    <string name="retry">Erneut versuchen</string>
+    <string name="back">Zurück</string>
+    <string name="ok">OK</string>
+    <string name="options">Optionen</string>
+    <string name="show_password">Anzeigen</string>
+    <string name="hide_password">Ausblenden</string>
+
+    <!-- Log list -->
+    <string name="total_qsos">%d QSOs gesamt</string>
+    <string name="no_qsos">Keine QSOs vorhanden</string>
+    <string name="connection_error">Verbindungsfehler</string>
+    <string name="list_end">— Ende —</string>
+    <string name="delete_qso_title">QSO löschen?</string>
+    <string name="delete_qso_message">%1$s – %2$s UTC wirklich löschen?</string>
+    <string name="error_delete_failed">Löschen fehlgeschlagen: %1$s</string>
+    <string name="error_connection">Verbindungsfehler</string>
+
+    <!-- New QSO -->
+    <string name="edit_qso">QSO bearbeiten</string>
+    <string name="clear_form">Formular leeren</string>
+    <string name="section_station">Gegenstation</string>
+    <string name="section_contact">Verbindung</string>
+    <string name="section_rst">RST / Rapport</string>
+    <string name="section_station_data">Stationsdaten</string>
+    <string name="section_extra">Zusatzinformationen</string>
+    <string name="callsign_required">Rufzeichen *</string>
+    <string name="callsign">Rufzeichen</string>
+    <string name="band">Band</string>
+    <string name="mode">Mode</string>
+    <string name="frequency">Frequenz (MHz)</string>
+    <string name="date_time">Datum / Zeit (UTC)</string>
+    <string name="rst_sent">RST Sent</string>
+    <string name="rst_rcvd">RST Rcvd</string>
+    <string name="tx_power">TX Power (W)</string>
+    <string name="name">Name</string>
+    <string name="address">Adresse</string>
+    <string name="qth">QTH</string>
+    <string name="country">Land</string>
+    <string name="gridsquare">Locator</string>
+    <string name="continent">Kontinent</string>
+    <string name="dxcc">DXCC</string>
+    <string name="cq_zone">CQ-Zone</string>
+    <string name="itu_zone">ITU-Zone</string>
+    <string name="prop_mode">Ausbreitungsart</string>
+    <string name="contest_id">Contest-ID</string>
+    <string name="comment">Kommentar</string>
+    <string name="notes">Notizen</string>
+    <string name="past_qsos">Frühere QSOs (%d)</string>
+    <string name="past_qsos_more">… +%d weitere</string>
+    <string name="pick_date">Datum wählen</string>
+    <string name="pick_time">Zeit wählen</string>
+    <string name="time_utc">Uhrzeit (UTC)</string>
+    <string name="qso_saved">QSO gespeichert</string>
+    <string name="qso_updated">QSO aktualisiert</string>
+    <string name="error_prefix">Fehler: %1$s</string>
+    <string name="qrz_prefix">QRZ: %1$s</string>
+    <string name="error_callsign_required">Rufzeichen fehlt</string>
+    <string name="error_save_failed">Speichern fehlgeschlagen</string>
+    <string name="error_save_failed_detail">Speichern fehlgeschlagen: %1$s</string>
+    <string name="error_qrz">QRZ Fehler</string>
+    <string name="error_qrz_detail">QRZ Fehler: %1$s</string>
+
+    <!-- Settings -->
+    <string name="settings_saved">Einstellungen gespeichert</string>
+    <string name="section_my_station">Eigene Station</string>
+    <string name="my_callsign">Eigenes Rufzeichen</string>
+    <string name="my_gridsquare">Eigener Locator (z.B. JN68)</string>
+    <string name="my_name">Eigener Name</string>
+    <string name="my_rig">Transceiver / Gerät</string>
+    <string name="my_dxcc">Eigene DXCC-Nummer (z.B. 230 = DL)</string>
+    <string name="section_db">MySQL Datenbankverbindung</string>
+    <string name="db_host">Host / IP</string>
+    <string name="db_port">Port</string>
+    <string name="db_name">Datenbankname (z.B. DF3MT)</string>
+    <string name="db_user">Benutzername</string>
+    <string name="db_password">Passwort</string>
+    <string name="test_connection">Verbindung testen</string>
+    <string name="testing_connection">Teste Verbindung…</string>
+    <string name="db_connected">Verbindung erfolgreich!</string>
+    <string name="db_error">Fehler</string>
+    <string name="db_error_detail">%1$s</string>
+    <string name="section_qrz">QRZ.com Zugangsdaten</string>
+    <string name="qrz_hint">Hinweis: Für die XML-API ist ein QRZ.com-Abonnement erforderlich.</string>
+    <string name="qrz_user">QRZ Benutzername / Rufzeichen</string>
+    <string name="qrz_password">QRZ Passwort</string>
+    <string name="section_adif">ADIF / ADI Import</string>
+    <string name="adif_hint">ADIF-Datei einlesen und in die Datenbank importieren. Doppelte QSOs (Mode + Datum + Band + Rufzeichen) werden automatisch übersprungen.</string>
+    <string name="adif_select">ADIF-Datei auswählen</string>
+    <string name="adif_importing">Importiere… (%d)</string>
+    <string name="adif_import_done">Import abgeschlossen: %1$d importiert, %2$d übersprungen</string>
+    <string name="adif_import_error">Importfehler: %1$s</string>
+    <string name="section_defaults">Standardwerte für neue QSOs</string>
+    <string name="default_band">Standard-Band</string>
+    <string name="default_mode">Standard-Mode</string>
+</resources>

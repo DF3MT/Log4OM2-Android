@@ -1,0 +1,3 @@
+<resources>
+    <style name="Theme.Log4OMAndroid" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>
