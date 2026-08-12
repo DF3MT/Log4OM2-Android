@@ -40,13 +40,26 @@ android {
     }
 
     buildTypes {
+        debug {
+            // Separate package so Studio installs don't block GitHub release APKs
+            // (INSTALL_FAILED_UPDATE_INCOMPATIBLE → "App not installed").
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
+        }
         release {
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfigs.findByName("release")?.let { signingConfig = it }
+            val releaseSigning = signingConfigs.findByName("release")
+            if (releaseSigning != null) {
+                signingConfig = releaseSigning
+            } else if (System.getenv("CI") == "true") {
+                throw GradleException(
+                    "Release signing secrets missing (KEYSTORE_FILE / KEYSTORE_PASSWORD / KEY_ALIAS / KEY_PASSWORD)."
+                )
+            }
         }
     }
 
