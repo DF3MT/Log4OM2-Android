@@ -156,6 +156,15 @@ There is **no in-app language switch** — change the device language. UI labels
 
 ---
 
+## Logbook filters & ADIF export
+
+- **Filters:** callsign, band, mode, date from/to, country, DXCC (toolbar filter icon → bottom sheet).
+- **Wildcards:** use `*` in callsign/country (e.g. `DL*`, `*HB9*`). Without `*`, text matches as contains.
+- **Multi-select:** long-press a row or tap the checklist toolbar icon; **All** selects every QSO matching the current filters (not only the loaded page).
+- **Export:** Share (system share sheet) or Save as… → `.adi` file (`log4om_export_yyyyMMdd_HHmm.adi`).
+
+---
+
 ## Security notes
 
 Please read before exposing MySQL beyond your LAN:
@@ -205,8 +214,8 @@ Log4OM2-Android/
 
 - Frequency display/edit: DB stores kHz; UI labels MHz — be careful when editing existing QSOs  
 - Location permission is declared but not requested with a runtime dialog yet  
-- Large ADIF files are read fully into memory  
-- No ADIF **export** yet  
+- Large ADIF files are read fully into memory on import  
+- Select-all on huge logs loads all matching IDs into memory  
 
 ---
 

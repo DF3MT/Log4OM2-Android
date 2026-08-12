@@ -1,5 +1,6 @@
 package com.log4om.android.data.db
 
+import com.log4om.android.data.model.LogFilter
 import com.log4om.android.data.model.Qso
 import java.sql.ResultSet
 import java.sql.Timestamp
@@ -14,43 +15,70 @@ data class BulkInsertResult(val inserted: Int, val skipped: Int)
 class QsoDao(private val db: DatabaseHelper) {
 
     suspend fun getRecentQsos(limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
-        db.withConnection { conn ->
-            conn.prepareStatement(
-                "SELECT * FROM log ORDER BY qsodate DESC LIMIT ? OFFSET ?"
-            ).use { stmt ->
-                stmt.setInt(1, limit)
-                stmt.setInt(2, offset)
-                stmt.executeQuery().use { it.toList() }
-            }
-        }
+        queryFiltered(LogFilter(), limit, offset)
 
     suspend fun searchQsos(query: String, limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
+        queryFiltered(LogFilter(callsign = query), limit, offset)
+
+    suspend fun queryFiltered(filter: LogFilter, limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
         db.withConnection { conn ->
-            val q = "%$query%"
-            conn.prepareStatement(
-                """SELECT * FROM log
-                   WHERE callsign LIKE ? OR name LIKE ? OR qth LIKE ? OR country LIKE ? OR gridsquare LIKE ?
-                   ORDER BY qsodate DESC LIMIT ? OFFSET ?"""
-            ).use { stmt ->
-                stmt.setString(1, q)
-                stmt.setString(2, q)
-                stmt.setString(3, q)
-                stmt.setString(4, q)
-                stmt.setString(5, q)
-                stmt.setInt(6, limit)
-                stmt.setInt(7, offset)
+            val built = LogFilterSql.build(filter)
+            val sql = "SELECT * FROM log ${built.whereSql} ORDER BY qsodate DESC LIMIT ? OFFSET ?"
+            conn.prepareStatement(sql).use { stmt ->
+                val next = built.bind(stmt, 1)
+                stmt.setInt(next, limit)
+                stmt.setInt(next + 1, offset)
                 stmt.executeQuery().use { it.toList() }
             }
         }
 
-    suspend fun getQsoCount(): Result<Int> =
+    suspend fun countFiltered(filter: LogFilter): Result<Int> =
         db.withConnection { conn ->
-            conn.createStatement().use { stmt ->
-                stmt.executeQuery("SELECT COUNT(*) FROM log").use { rs ->
+            val built = LogFilterSql.build(filter)
+            val sql = "SELECT COUNT(*) FROM log ${built.whereSql}"
+            conn.prepareStatement(sql).use { stmt ->
+                built.bind(stmt, 1)
+                stmt.executeQuery().use { rs ->
                     if (rs.next()) rs.getInt(1) else 0
                 }
             }
         }
+
+    suspend fun getFilteredIds(filter: LogFilter): Result<List<Long>> =
+        db.withConnection { conn ->
+            val built = LogFilterSql.build(filter)
+            val sql = "SELECT qsoid FROM log ${built.whereSql} ORDER BY qsodate DESC"
+            conn.prepareStatement(sql).use { stmt ->
+                built.bind(stmt, 1)
+                stmt.executeQuery().use { rs ->
+                    val ids = mutableListOf<Long>()
+                    while (rs.next()) ids += rs.getLong(1)
+                    ids
+                }
+            }
+        }
+
+    suspend fun getQsosByIds(ids: List<Long>): Result<List<Qso>> {
+        if (ids.isEmpty()) return Result.success(emptyList())
+        return db.withConnection { conn ->
+            val ordered = ArrayList<Qso>(ids.size)
+            ids.chunked(400).forEach { chunk ->
+                val placeholders = chunk.joinToString(",") { "?" }
+                conn.prepareStatement(
+                    "SELECT * FROM log WHERE qsoid IN ($placeholders)"
+                ).use { stmt ->
+                    chunk.forEachIndexed { i, id -> stmt.setLong(i + 1, id) }
+                    val byId = stmt.executeQuery().use { rs ->
+                        rs.toList().associateBy { it.qsoid }
+                    }
+                    chunk.forEach { id -> byId[id]?.let { ordered += it } }
+                }
+            }
+            ordered
+        }
+    }
+
+    suspend fun getQsoCount(): Result<Int> = countFiltered(LogFilter())
 
     suspend fun insertQso(qso: Qso): Result<Boolean> =
         db.withConnection { conn ->

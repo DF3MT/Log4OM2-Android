@@ -111,4 +111,35 @@
     <string name="section_defaults">Defaults for new QSOs</string>
     <string name="default_band">Default band</string>
     <string name="default_mode">Default mode</string>
+
+    <!-- Filter / selection / export -->
+    <string name="filter">Filter</string>
+    <string name="filter_title">Filter logbook</string>
+    <string name="filter_apply">Apply</string>
+    <string name="filter_reset">Reset</string>
+    <string name="filter_wildcard_hint">Wildcard: * (e.g. DL* or *HB9*)</string>
+    <string name="filter_date_from">Date from</string>
+    <string name="filter_date_to">Date to</string>
+    <string name="filter_all_bands">All bands</string>
+    <string name="filter_all_modes">All modes</string>
+    <string name="filter_chip_call">Call: %1$s</string>
+    <string name="filter_chip_band">Band: %1$s</string>
+    <string name="filter_chip_mode">Mode: %1$s</string>
+    <string name="filter_chip_from">From: %1$s</string>
+    <string name="filter_chip_to">To: %1$s</string>
+    <string name="filter_chip_country">Country: %1$s</string>
+    <string name="filter_chip_dxcc">DXCC: %1$s</string>
+    <string name="select">Select</string>
+    <string name="select_all">All</string>
+    <string name="selection_count">%d selected</string>
+    <string name="selection_all_count">%d QSOs selected</string>
+    <string name="error_selection_failed">Selection failed: %1$s</string>
+    <string name="share">Share</string>
+    <string name="save_as">Save as…</string>
+    <string name="export_adif">Export ADIF</string>
+    <string name="export_none_selected">No QSOs selected</string>
+    <string name="export_failed">Export failed: %1$s</string>
+    <string name="export_share_title">Share ADIF</string>
+    <string name="export_done">ADIF exported</string>
+    <string name="clear_date">Clear date</string>
 </resources>

@@ -22,16 +22,18 @@ fun DropdownField(
     value: String,
     options: List<String>,
     onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    optionLabel: @Composable (String) -> String = { it }
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val displayValue = optionLabel(value)
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = !expanded },
         modifier = modifier
     ) {
         OutlinedTextField(
-            value = value,
+            value = displayValue,
             onValueChange = {},
             readOnly = true,
             label = { Text(label) },
@@ -48,7 +50,7 @@ fun DropdownField(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(optionLabel(option)) },
                     onClick = {
                         onSelect(option)
                         expanded = false

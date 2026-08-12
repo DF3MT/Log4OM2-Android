@@ -2,9 +2,11 @@ package com.log4om.android.data.repository
 
 import com.log4om.android.data.adif.AdifMapper
 import com.log4om.android.data.adif.AdifParser
+import com.log4om.android.data.adif.AdifWriter
 import com.log4om.android.data.db.BulkInsertResult
 import com.log4om.android.data.db.DatabaseHelper
 import com.log4om.android.data.db.QsoDao
+import com.log4om.android.data.model.LogFilter
 import com.log4om.android.data.model.Qso
 import com.log4om.android.data.model.QrzCallsignData
 import com.log4om.android.data.network.QrzApiService
@@ -48,6 +50,31 @@ class LogRepository(
     suspend fun searchQsos(query: String, limit: Int = 100, offset: Int = 0): Result<List<Qso>> {
         ensureDbConfigured()
         return qsoDao.searchQsos(query, limit, offset)
+    }
+
+    suspend fun queryQsos(filter: LogFilter, limit: Int = 100, offset: Int = 0): Result<List<Qso>> {
+        ensureDbConfigured()
+        return qsoDao.queryFiltered(filter, limit, offset)
+    }
+
+    suspend fun countQsos(filter: LogFilter): Result<Int> {
+        ensureDbConfigured()
+        return qsoDao.countFiltered(filter)
+    }
+
+    suspend fun getFilteredQsoIds(filter: LogFilter): Result<List<Long>> {
+        ensureDbConfigured()
+        return qsoDao.getFilteredIds(filter)
+    }
+
+    suspend fun getQsosByIds(ids: List<Long>): Result<List<Qso>> {
+        ensureDbConfigured()
+        return qsoDao.getQsosByIds(ids)
+    }
+
+    suspend fun exportAdif(ids: List<Long>): Result<String> {
+        ensureDbConfigured()
+        return qsoDao.getQsosByIds(ids).map { AdifWriter.toAdif(it) }
     }
 
     suspend fun insertQso(qso: Qso): Result<Boolean> {
