@@ -121,8 +121,8 @@ class LogRepository(
 
         var best: QrzCallsignData? = null
         var lastError: String? = null
-        val qrzUser = prefs.qrzUser.first()
-        if (qrzUser.isNotBlank()) {
+
+        if (qrzApiService.isConfigured) {
             qrzApiService.lookupCallsign(call).fold(
                 onSuccess = { data ->
                     if (data.hasUsefulData) best = data
@@ -155,9 +155,13 @@ class LogRepository(
         if (clubLogApiService.isConfigured &&
             (current == null || current.dxcc.isBlank() || current.country.isBlank())
         ) {
-            clubLogApiService.lookupDxcc(call).onSuccess { data ->
-                best = mergeLookup(best, data)
-            }.onFailure { lastError = it.message ?: lastError }
+            clubLogApiService.lookupDxcc(call).fold(
+                onSuccess = { data -> best = mergeLookup(best, data) },
+                onFailure = { err ->
+                    // Don't replace a successful callbook result with Club Log noise
+                    if (best == null) lastError = err.message ?: lastError
+                }
+            )
         }
 
         val result = best

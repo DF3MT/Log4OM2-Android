@@ -110,6 +110,7 @@
     <string name="clublog_hint">Optional API key for DXCC entity resolution when callbook data is incomplete.</string>
     <string name="clublog_api_key">Club Log API key</string>
     <string name="lookup_source">Source: %1$s</string>
+    <string name="lookup_callsign">Lookup callsign</string>
     <string name="dxcc_new">New DXCC!</string>
     <string name="dxcc_new_band">New on this band</string>
     <string name="dxcc_worked">DXCC already worked</string>

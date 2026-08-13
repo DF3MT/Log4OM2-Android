@@ -109,15 +109,21 @@ class QsoDao(private val db: DatabaseHelper) {
     suspend fun insertQso(qso: Qso): Result<Boolean> =
         db.withConnection { conn ->
             conn.prepareStatement(INSERT_SQL).use { stmt ->
-                stmt.bindQso(qso)
+                stmt.bindQso(qso, existingRefsJson = null)
                 stmt.executeUpdate() > 0
             }
         }
 
     suspend fun updateQso(qso: Qso): Result<Boolean> =
         db.withConnection { conn ->
+            val existing = conn.prepareStatement(
+                "SELECT contactreferences FROM log WHERE qsoid=?"
+            ).use { stmt ->
+                stmt.setLong(1, qso.qsoid)
+                stmt.executeQuery().use { rs -> if (rs.next()) rs.getString(1) else null }
+            }
             conn.prepareStatement(UPDATE_SQL).use { stmt ->
-                stmt.bindQsoUpdate(qso)
+                stmt.bindQsoUpdate(qso, existing)
                 stmt.executeUpdate() > 0
             }
         }
@@ -154,7 +160,7 @@ class QsoDao(private val db: DatabaseHelper) {
             try {
                 conn.prepareStatement(INSERT_IGNORE_SQL).use { stmt ->
                     qsos.forEachIndexed { idx, q ->
-                        stmt.bindQso(q)
+                        stmt.bindQso(q, existingRefsJson = null)
                         stmt.addBatch()
                         if ((idx + 1) % chunkSize == 0) {
                             val results = stmt.executeBatch()
@@ -197,7 +203,7 @@ class QsoDao(private val db: DatabaseHelper) {
             mydxcc, mylat, mylon,
             forceinit, mufday, reliability, signaltonoiseratio, sunspots,
             lat, lon, distance,
-            sota_ref, iota, pota_ref, wwff_ref, cota_ref
+            contactreferences
         ) VALUES (
             ?,?,?,?,?,
             ?,?,?,?,
@@ -217,7 +223,7 @@ class QsoDao(private val db: DatabaseHelper) {
             ?,?,?,
             ?,?,?,?,?,
             ?,?,?,
-            ?,?,?,?,?
+            ?
         )
     """.trimIndent()
 
@@ -238,11 +244,11 @@ class QsoDao(private val db: DatabaseHelper) {
             satmode=?, satname=?, satelliteqso=?,
             operator=?, sig=?, siginfo=?,
             lat=?, lon=?, distance=?,
-            sota_ref=?, iota=?, pota_ref=?, wwff_ref=?, cota_ref=?
+            contactreferences=?
         WHERE qsoid=?
     """.trimIndent()
 
-    private fun java.sql.PreparedStatement.bindQso(q: Qso) {
+    private fun java.sql.PreparedStatement.bindQso(q: Qso, existingRefsJson: String?) {
         var i = 1
         setLong(i++, q.qsoid)
         setString(i++, q.callsign.uppercase())
@@ -319,14 +325,10 @@ class QsoDao(private val db: DatabaseHelper) {
         if (q.lat != null) setDouble(i++, q.lat) else setNull(i++, Types.DECIMAL)
         if (q.lon != null) setDouble(i++, q.lon) else setNull(i++, Types.DECIMAL)
         if (q.distance != null) setDouble(i++, q.distance) else setNull(i++, Types.DECIMAL)
-        setString(i++, q.sotaRef)
-        setString(i++, q.iota)
-        setString(i++, q.potaRef)
-        setString(i++, q.wwffRef)
-        setString(i++, q.cotaRef)
+        bindContactReferences(i, q, existingRefsJson)
     }
 
-    private fun java.sql.PreparedStatement.bindQsoUpdate(q: Qso) {
+    private fun java.sql.PreparedStatement.bindQsoUpdate(q: Qso, existingRefsJson: String?) {
         var i = 1
         setString(i++, q.callsign.uppercase())
         setString(i++, q.band)
@@ -378,12 +380,18 @@ class QsoDao(private val db: DatabaseHelper) {
         if (q.lat != null) setDouble(i++, q.lat) else setNull(i++, Types.DECIMAL)
         if (q.lon != null) setDouble(i++, q.lon) else setNull(i++, Types.DECIMAL)
         if (q.distance != null) setDouble(i++, q.distance) else setNull(i++, Types.DECIMAL)
-        setString(i++, q.sotaRef)
-        setString(i++, q.iota)
-        setString(i++, q.potaRef)
-        setString(i++, q.wwffRef)
-        setString(i++, q.cotaRef)
+        i = bindContactReferences(i, q, existingRefsJson)
         setLong(i, q.qsoid)
+    }
+
+    private fun java.sql.PreparedStatement.bindContactReferences(
+        index: Int,
+        q: Qso,
+        existingJson: String?
+    ): Int {
+        val json = ContactReferencesJson.encode(ContactReferencesJson.fromQso(q), existingJson)
+        if (json == null) setNull(index, Types.NULL) else setString(index, json)
+        return index + 1
     }
 
     // --- ResultSet mapping ---
@@ -408,7 +416,9 @@ class QsoDao(private val db: DatabaseHelper) {
     private fun ResultSet.optDouble(col: String): Double? = getObject(col)?.let { (it as Number).toDouble() }
     private fun ResultSet.optDateTime(col: String): LocalDateTime? = getTimestamp(col)?.toLocalDT()
 
-    private fun ResultSet.toQso() = Qso(
+    private fun ResultSet.toQso(): Qso {
+        val awardRefs = ContactReferencesJson.parse(softStr("contactreferences"))
+        return Qso(
         qsoid            = getLong("qsoid"),
         callsign         = str("callsign"),
         band             = str("band"),
@@ -491,11 +501,11 @@ class QsoDao(private val db: DatabaseHelper) {
         sfi              = optDouble("sfi"),
         sig              = str("sig"),
         siginfo          = str("siginfo"),
-        sotaRef          = softStr("sota_ref"),
-        iota             = softStr("iota"),
-        potaRef          = softStr("pota_ref"),
-        wwffRef          = softStr("wwff_ref"),
-        cotaRef          = softStr("cota_ref"),
+        sotaRef          = awardRefs.sota.ifBlank { softStr("sota_ref") },
+        iota             = awardRefs.iota.ifBlank { softStr("iota") },
+        potaRef          = awardRefs.pota.ifBlank { softStr("pota_ref") },
+        wwffRef          = awardRefs.wwff.ifBlank { softStr("wwff_ref") },
+        cotaRef          = awardRefs.cota.ifBlank { softStr("cota_ref") },
         stationcallsign  = str("stationcallsign"),
         srx              = optDouble("srx"),
         srxstring        = str("srxstring"),
@@ -508,5 +518,6 @@ class QsoDao(private val db: DatabaseHelper) {
         reliability      = getDouble("reliability"),
         signaltonoiseratio = getDouble("signaltonoiseratio"),
         sunspots         = getInt("sunspots")
-    )
+        )
+    }
 }

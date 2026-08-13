@@ -155,6 +155,16 @@ fun NewQsoScreen(
                     trailingIcon = {
                         if (form.qrzLoading) {
                             CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        } else {
+                            IconButton(
+                                onClick = { viewModel.lookupCallsign(silent = false) },
+                                enabled = form.callsign.length >= 3
+                            ) {
+                                Icon(
+                                    Icons.Default.Search,
+                                    contentDescription = stringResource(R.string.lookup_callsign)
+                                )
+                            }
                         }
                     },
                     isError = form.callsign.isBlank() && form.saveError != null

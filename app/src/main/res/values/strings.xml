@@ -110,6 +110,7 @@
     <string name="clublog_hint">Optionaler API-Key für DXCC-Entity-Auflösung, wenn Callbook-Daten unvollständig sind.</string>
     <string name="clublog_api_key">Club Log API-Key</string>
     <string name="lookup_source">Quelle: %1$s</string>
+    <string name="lookup_callsign">Callsign nachschlagen</string>
     <string name="dxcc_new">Neues DXCC!</string>
     <string name="dxcc_new_band">Neu auf diesem Band</string>
     <string name="dxcc_worked">DXCC bereits gearbeitet</string>

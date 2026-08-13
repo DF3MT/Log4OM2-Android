@@ -64,28 +64,28 @@ internal object LogFilterSql {
             binders += { stmt, i -> stmt.setInt(i, dxcc); i + 1 }
         }
         if (filter.sotaRef.isNotBlank()) {
-            parts += "sota_ref LIKE ? ESCAPE '!'"
-            val pattern = toLikePattern(filter.sotaRef.trim().uppercase())
+            parts += "CAST(contactreferences AS CHAR) LIKE ? ESCAPE '!'"
+            val pattern = "%SOTA" + toLikePattern(filter.sotaRef.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
         if (filter.iota.isNotBlank()) {
-            parts += "iota LIKE ? ESCAPE '!'"
-            val pattern = toLikePattern(filter.iota.trim().uppercase())
+            parts += "CAST(contactreferences AS CHAR) LIKE ? ESCAPE '!'"
+            val pattern = "%IOTA" + toLikePattern(filter.iota.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
         if (filter.potaRef.isNotBlank()) {
-            parts += "pota_ref LIKE ? ESCAPE '!'"
-            val pattern = toLikePattern(filter.potaRef.trim().uppercase())
+            parts += "CAST(contactreferences AS CHAR) LIKE ? ESCAPE '!'"
+            val pattern = "%POTA" + toLikePattern(filter.potaRef.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
         if (filter.wwffRef.isNotBlank()) {
-            parts += "wwff_ref LIKE ? ESCAPE '!'"
-            val pattern = toLikePattern(filter.wwffRef.trim().uppercase())
+            parts += "CAST(contactreferences AS CHAR) LIKE ? ESCAPE '!'"
+            val pattern = "%WWFF" + toLikePattern(filter.wwffRef.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
         if (filter.cotaRef.isNotBlank()) {
-            parts += "cota_ref LIKE ? ESCAPE '!'"
-            val pattern = toLikePattern(filter.cotaRef.trim().uppercase())
+            parts += "CAST(contactreferences AS CHAR) LIKE ? ESCAPE '!'"
+            val pattern = "%COTA" + toLikePattern(filter.cotaRef.trim().uppercase())
             binders += { stmt, i -> stmt.setString(i, pattern); i + 1 }
         }
 

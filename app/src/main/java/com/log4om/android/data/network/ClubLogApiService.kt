@@ -40,11 +40,9 @@ class ClubLogApiService {
                     "call=$call&api=$key&year=${date.year}&month=${date.monthValue}&day=${date.dayOfMonth}&full=1"
                 val body = client.newCall(Request.Builder().url(url).build()).execute()
                     .body?.string() ?: throw Exception("Empty Club Log response")
-                if (body.startsWith("Invalid") || body.startsWith("Error") || body.contains("API")) {
-                    // Club Log returns plain-text errors for bad keys
-                    if (!body.trimStart().startsWith("{") && !body.trimStart().startsWith("[")) {
-                        throw Exception(body.trim().take(120))
-                    }
+                val trimmed = body.trim()
+                if (!trimmed.startsWith("{") && !trimmed.startsWith("[")) {
+                    throw Exception(trimmed.take(120).ifBlank { "Club Log error" })
                 }
                 val json = JSONObject(body)
                 val dxcc = json.optInt("DXCC", json.optInt("dxcc", 0))
