@@ -12,12 +12,6 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 class AppPrefs(private val context: Context) {
 
     companion object {
-        val DB_HOST     = stringPreferencesKey("db_host")
-        val DB_PORT     = intPreferencesKey("db_port")
-        val DB_NAME     = stringPreferencesKey("db_name")
-        val DB_USER     = stringPreferencesKey("db_user")
-        val DB_PASSWORD = stringPreferencesKey("db_password")
-
         val QRZ_USER     = stringPreferencesKey("qrz_user")
         val QRZ_PASSWORD = stringPreferencesKey("qrz_password")
 
@@ -45,12 +39,6 @@ class AppPrefs(private val context: Context) {
         val REFS_LAST_SYNC_MS = longPreferencesKey("refs_last_sync_ms")
         val REFS_LAST_SYNC_NOTE = stringPreferencesKey("refs_last_sync_note")
     }
-
-    val dbHost:     Flow<String> = context.dataStore.data.map { it[DB_HOST]     ?: "" }
-    val dbPort:     Flow<Int>    = context.dataStore.data.map { it[DB_PORT]     ?: 3306 }
-    val dbName:     Flow<String> = context.dataStore.data.map { it[DB_NAME]     ?: "" }
-    val dbUser:     Flow<String> = context.dataStore.data.map { it[DB_USER]     ?: "" }
-    val dbPassword: Flow<String> = context.dataStore.data.map { it[DB_PASSWORD] ?: "" }
 
     val qrzUser:     Flow<String> = context.dataStore.data.map { it[QRZ_USER]     ?: "" }
     val qrzPassword: Flow<String> = context.dataStore.data.map { it[QRZ_PASSWORD] ?: "" }

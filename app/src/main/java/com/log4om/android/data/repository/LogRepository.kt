@@ -1,16 +1,13 @@
 package com.log4om.android.data.repository
 
-import com.log4om.android.data.adif.AdifMapper
-import com.log4om.android.data.adif.AdifParser
 import com.log4om.android.data.adif.AdifWriter
-import com.log4om.android.data.db.BulkInsertResult
-import com.log4om.android.data.db.DatabaseHelper
-import com.log4om.android.data.db.QsoDao
+import com.log4om.android.data.model.BulkInsertResult
 import com.log4om.android.data.model.LogFilter
 import com.log4om.android.data.model.Qso
 import com.log4om.android.data.model.QrzCallsignData
 import com.log4om.android.data.network.ClubLogApiService
 import com.log4om.android.data.network.HamQthApiService
+import com.log4om.android.data.network.Log4omApiService
 import com.log4om.android.data.network.QrzApiService
 import com.log4om.android.data.prefs.AppPrefs
 import kotlinx.coroutines.flow.first
@@ -18,25 +15,14 @@ import java.io.InputStream
 
 class LogRepository(
     val prefs: AppPrefs,
-    private val dbHelper: DatabaseHelper,
-    private val qsoDao: QsoDao,
+    private val api: Log4omApiService,
     private val qrzApiService: QrzApiService,
     private val hamQthApiService: HamQthApiService,
     private val clubLogApiService: ClubLogApiService
 ) {
-    private suspend fun ensureDbConfigured() {
-        dbHelper.configure(
-            host     = prefs.dbHost.first(),
-            port     = prefs.dbPort.first(),
-            database = prefs.dbName.first(),
-            user     = prefs.dbUser.first(),
-            password = prefs.dbPassword.first()
-        )
-    }
-
     private suspend fun ensureQrzConfigured() {
         qrzApiService.configure(
-            user     = prefs.qrzUser.first(),
+            user = prefs.qrzUser.first(),
             password = prefs.qrzPassword.first()
         )
     }
@@ -44,71 +30,46 @@ class LogRepository(
     private suspend fun ensureLookupConfigured() {
         ensureQrzConfigured()
         hamQthApiService.configure(
-            user     = prefs.hamqthUser.first(),
+            user = prefs.hamqthUser.first(),
             password = prefs.hamqthPassword.first()
         )
         clubLogApiService.configure(prefs.clublogApiKey.first())
     }
 
-    suspend fun testDbConnection(): Result<Unit> {
-        ensureDbConfigured()
-        return dbHelper.testConnection()
-    }
+    suspend fun testDbConnection(): Result<Unit> = api.testTenantDb()
 
-    suspend fun getRecentQsos(limit: Int = 100, offset: Int = 0): Result<List<Qso>> {
-        ensureDbConfigured()
-        return qsoDao.getRecentQsos(limit, offset)
-    }
+    suspend fun getRecentQsos(limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
+        api.listQsos(LogFilter(), limit, offset)
 
-    suspend fun searchQsos(query: String, limit: Int = 100, offset: Int = 0): Result<List<Qso>> {
-        ensureDbConfigured()
-        return qsoDao.searchQsos(query, limit, offset)
-    }
+    suspend fun searchQsos(query: String, limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
+        api.listQsos(LogFilter(callsign = query), limit, offset)
 
-    suspend fun queryQsos(filter: LogFilter, limit: Int = 100, offset: Int = 0): Result<List<Qso>> {
-        ensureDbConfigured()
-        return qsoDao.queryFiltered(filter, limit, offset)
-    }
+    suspend fun queryQsos(filter: LogFilter, limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
+        api.listQsos(filter, limit, offset)
 
-    suspend fun countQsos(filter: LogFilter): Result<Int> {
-        ensureDbConfigured()
-        return qsoDao.countFiltered(filter)
-    }
+    suspend fun countQsos(filter: LogFilter): Result<Int> = api.countQsos(filter)
 
-    suspend fun getFilteredQsoIds(filter: LogFilter): Result<List<Long>> {
-        ensureDbConfigured()
-        return qsoDao.getFilteredIds(filter)
-    }
+    suspend fun getFilteredQsoIds(filter: LogFilter): Result<List<Long>> = api.filteredIds(filter)
 
-    suspend fun getQsosByIds(ids: List<Long>): Result<List<Qso>> {
-        ensureDbConfigured()
-        return qsoDao.getQsosByIds(ids)
-    }
+    suspend fun getQsosByIds(ids: List<Long>): Result<List<Qso>> = api.qsosByIds(ids)
 
     suspend fun exportAdif(ids: List<Long>): Result<String> {
-        ensureDbConfigured()
-        return qsoDao.getQsosByIds(ids).map { AdifWriter.toAdif(it) }
+        val remote = api.exportAdif(ids)
+        if (remote.isSuccess) return remote
+        // Fallback: client-side ADIF from fetched rows
+        return api.qsosByIds(ids).map { AdifWriter.toAdif(it) }
     }
 
-    suspend fun insertQso(qso: Qso): Result<Boolean> {
-        ensureDbConfigured()
-        return qsoDao.insertQso(qso)
-    }
+    suspend fun insertQso(qso: Qso): Result<Boolean> =
+        api.createQso(qso).map { true }
 
-    suspend fun updateQso(qso: Qso): Result<Boolean> {
-        ensureDbConfigured()
-        return qsoDao.updateQso(qso)
-    }
+    suspend fun updateQso(qso: Qso): Result<Boolean> =
+        api.updateQso(qso.qsoid, qso).map { true }
 
-    suspend fun deleteQso(qsoid: Long): Result<Boolean> {
-        ensureDbConfigured()
-        return qsoDao.deleteQso(qsoid)
-    }
+    suspend fun deleteQso(qsoid: Long): Result<Boolean> =
+        api.deleteQso(qsoid).map { true }
 
-    suspend fun getQsoCount(): Result<Int> {
-        ensureDbConfigured()
-        return qsoDao.getQsoCount()
-    }
+    suspend fun getQsoCount(): Result<Int> = api.countQsos(LogFilter())
 
     /**
      * Multi-source lookup: QRZ → HamQTH → Club Log (DXCC-only fill).
@@ -158,7 +119,6 @@ class LogRepository(
             clubLogApiService.lookupDxcc(call).fold(
                 onSuccess = { data -> best = mergeLookup(best, data) },
                 onFailure = { err ->
-                    // Don't replace a successful callbook result with Club Log noise
                     if (best == null) lastError = err.message ?: lastError
                 }
             )
@@ -202,58 +162,22 @@ class LogRepository(
         )
     }
 
-    suspend fun getWorkedDxccIds(): Result<Set<Int>> {
-        ensureDbConfigured()
-        return qsoDao.getWorkedDxccIds()
-    }
+    suspend fun getWorkedDxccIds(): Result<Set<Int>> = api.workedDxccIds()
 
-    suspend fun getWorkedDxccBands(): Result<Set<Pair<Int, String>>> {
-        ensureDbConfigured()
-        return qsoDao.getWorkedDxccBands()
-    }
+    suspend fun getWorkedDxccBands(): Result<Set<Pair<Int, String>>> = api.workedDxccBands()
 
-    suspend fun getQsosByCallsign(callsign: String, limit: Int = 15): Result<List<Qso>> {
-        ensureDbConfigured()
-        return qsoDao.getQsosByCallsign(callsign, limit)
-    }
+    suspend fun getQsosByCallsign(callsign: String, limit: Int = 15): Result<List<Qso>> =
+        api.byCallsign(callsign, limit)
 
     /**
-     * Parse ADIF stream and insert in chunks. Reports parsed-record count via [onProgress].
-     * Existing rows (matched by composite PK mode+qsodate+band+callsign) are silently skipped.
+     * Upload ADIF stream to the API. [onProgress] is best-effort (bytes read proxy).
      */
     suspend fun importAdif(
         input: InputStream,
         onProgress: (parsed: Int) -> Unit = {}
-    ): Result<BulkInsertResult> {
-        ensureDbConfigured()
-        var totalInserted = 0
-        var totalSkipped = 0
-        var totalInvalid = 0
-        var parsed = 0
-        val chunk = ArrayList<Qso>(500)
-        val baseId = System.currentTimeMillis()
-        return runCatching {
-            input.use { stream ->
-                AdifParser.parse(stream).forEach { rec ->
-                    val qso = AdifMapper.toQso(rec, baseId + parsed)
-                    if (qso != null) chunk.add(qso) else totalInvalid++
-                    parsed++
-                    if (chunk.size >= 500) {
-                        val r = qsoDao.bulkInsert(chunk).getOrThrow()
-                        totalInserted += r.inserted
-                        totalSkipped += r.skipped
-                        chunk.clear()
-                        onProgress(parsed)
-                    }
-                }
-                if (chunk.isNotEmpty()) {
-                    val r = qsoDao.bulkInsert(chunk).getOrThrow()
-                    totalInserted += r.inserted
-                    totalSkipped += r.skipped
-                    onProgress(parsed)
-                }
-            }
-            BulkInsertResult(inserted = totalInserted, skipped = totalSkipped + totalInvalid)
-        }
+    ): Result<BulkInsertResult> = runCatching {
+        val bytes = input.use { it.readBytes() }
+        onProgress(1)
+        api.importAdif(bytes).getOrThrow().also { onProgress(2) }
     }
 }

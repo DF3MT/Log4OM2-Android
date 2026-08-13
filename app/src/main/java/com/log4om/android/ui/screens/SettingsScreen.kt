@@ -29,12 +29,12 @@ import com.log4om.android.util.AmateurRadio
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
-    updateViewModel: UpdateViewModel
+    updateViewModel: UpdateViewModel,
+    onLogout: () -> Unit = {}
 ) {
     val state      by viewModel.state.collectAsState()
     val updateState by updateViewModel.state.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    var showDbPw   by remember { mutableStateOf(false) }
     var showQrzPw  by remember { mutableStateOf(false) }
     var showHamqthPw by remember { mutableStateOf(false) }
 
@@ -128,51 +128,18 @@ fun SettingsScreen(
                 keyboardType = KeyboardType.Number
             )
 
-            SectionHeader(stringResource(R.string.section_db))
-            Row(
-                Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                LabeledTextField(
-                    label = stringResource(R.string.db_host),
-                    value = state.dbHost,
-                    onValueChange = viewModel::updateDbHost,
-                    modifier = Modifier.weight(2f)
-                )
-                LabeledTextField(
-                    label = stringResource(R.string.db_port),
-                    value = state.dbPort,
-                    onValueChange = viewModel::updateDbPort,
-                    keyboardType = KeyboardType.Number,
-                    modifier = Modifier.weight(1f)
+            SectionHeader(stringResource(R.string.section_account))
+            if (state.accountEmail.isNotBlank()) {
+                Text(
+                    state.accountEmail,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             LabeledTextField(
-                label = stringResource(R.string.db_name),
-                value = state.dbName,
-                onValueChange = viewModel::updateDbName
-            )
-            LabeledTextField(
-                label = stringResource(R.string.db_user),
-                value = state.dbUser,
-                onValueChange = viewModel::updateDbUser
-            )
-            OutlinedTextField(
-                value = state.dbPassword,
-                onValueChange = viewModel::updateDbPassword,
-                label = { Text(stringResource(R.string.db_password)) },
-                modifier = Modifier.fillMaxWidth(),
-                visualTransformation = if (showDbPw) VisualTransformation.None else PasswordVisualTransformation(),
-                trailingIcon = {
-                    IconButton(onClick = { showDbPw = !showDbPw }) {
-                        Icon(
-                            if (showDbPw) Icons.Default.VisibilityOff else Icons.Default.Visibility,
-                            stringResource(
-                                if (showDbPw) R.string.hide_password else R.string.show_password
-                            )
-                        )
-                    }
-                }
+                label = stringResource(R.string.api_url),
+                value = state.apiUrl,
+                onValueChange = viewModel::updateApiUrl
             )
             Button(
                 onClick = viewModel::testDbConnection,
@@ -190,8 +157,14 @@ fun SettingsScreen(
                 } else {
                     Icon(Icons.Default.CloudDone, null)
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.test_connection))
+                    Text(stringResource(R.string.test_tenant_db))
                 }
+            }
+            OutlinedButton(
+                onClick = onLogout,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.logout))
             }
 
             SectionHeader(stringResource(R.string.section_qrz))

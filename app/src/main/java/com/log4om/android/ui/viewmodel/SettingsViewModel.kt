@@ -3,6 +3,7 @@ package com.log4om.android.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.log4om.android.R
+import com.log4om.android.data.auth.AuthTokenStore
 import com.log4om.android.data.prefs.AppPrefs
 import com.log4om.android.data.refs.ActivityProgram
 import com.log4om.android.data.refs.ReferenceCatalog
@@ -18,26 +19,23 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
 data class SettingsState(
-    val dbHost:     String = "",
-    val dbPort:     String = "3306",
-    val dbName:     String = "",
-    val dbUser:     String = "",
-    val dbPassword: String = "",
-    val qrzUser:     String = "",
+    val apiUrl: String = AuthTokenStore.DEFAULT_API_URL,
+    val accountEmail: String = "",
+    val qrzUser: String = "",
     val qrzPassword: String = "",
-    val hamqthUser:     String = "",
+    val hamqthUser: String = "",
     val hamqthPassword: String = "",
-    val clublogApiKey:  String = "",
-    val myCallsign:   String = "",
+    val clublogApiKey: String = "",
+    val myCallsign: String = "",
     val myGridsquare: String = "",
-    val myName:       String = "",
-    val myRig:        String = "",
-    val myDxcc:       String = "",
+    val myName: String = "",
+    val myRig: String = "",
+    val myDxcc: String = "",
     val defaultRstSent: String = "59",
     val defaultRstRcvd: String = "59",
-    val defaultBand:    String = "20m",
-    val defaultMode:    String = "SSB",
-    val defaultTxpwr:   String = "",
+    val defaultBand: String = "20m",
+    val defaultMode: String = "SSB",
+    val defaultTxpwr: String = "",
     val radiusSotaM: String = "200",
     val radiusPotaM: String = "800",
     val radiusWwffM: String = "500",
@@ -52,21 +50,22 @@ data class SettingsState(
     val refsSyncNote: String = "",
     val isSyncingRefs: Boolean = false,
     val refsSyncProgress: String = "",
-    val isTestingDb:    Boolean = false,
-    val dbTestResult:   UiText? = null,
-    val dbTestSuccess:  Boolean = false,
-    val isSaving:       Boolean = false,
-    val saveSuccess:    Boolean = false,
-    val isImporting:    Boolean = false,
+    val isTestingDb: Boolean = false,
+    val dbTestResult: UiText? = null,
+    val dbTestSuccess: Boolean = false,
+    val isSaving: Boolean = false,
+    val saveSuccess: Boolean = false,
+    val isImporting: Boolean = false,
     val importProgress: Int = 0,
-    val importMessage:  UiText? = null
+    val importMessage: UiText? = null
 )
 
 class SettingsViewModel(
     private val prefs: AppPrefs,
     private val repository: LogRepository,
     private val catalog: ReferenceCatalog,
-    private val syncService: ReferenceSyncService
+    private val syncService: ReferenceSyncService,
+    private val authStore: AuthTokenStore
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(SettingsState())
@@ -78,32 +77,29 @@ class SettingsViewModel(
     init {
         viewModelScope.launch {
             _state.value = SettingsState(
-                dbHost         = prefs.dbHost.first(),
-                dbPort         = prefs.dbPort.first().toString(),
-                dbName         = prefs.dbName.first(),
-                dbUser         = prefs.dbUser.first(),
-                dbPassword     = prefs.dbPassword.first(),
-                qrzUser        = prefs.qrzUser.first(),
-                qrzPassword    = prefs.qrzPassword.first(),
-                hamqthUser     = prefs.hamqthUser.first(),
+                apiUrl = authStore.apiBaseUrl,
+                accountEmail = authStore.email.orEmpty(),
+                qrzUser = prefs.qrzUser.first(),
+                qrzPassword = prefs.qrzPassword.first(),
+                hamqthUser = prefs.hamqthUser.first(),
                 hamqthPassword = prefs.hamqthPassword.first(),
-                clublogApiKey  = prefs.clublogApiKey.first(),
-                myCallsign     = prefs.myCallsign.first(),
-                myGridsquare   = prefs.myGridsquare.first(),
-                myName         = prefs.myName.first(),
-                myRig          = prefs.myRig.first(),
-                myDxcc         = prefs.myDxcc.first(),
+                clublogApiKey = prefs.clublogApiKey.first(),
+                myCallsign = prefs.myCallsign.first(),
+                myGridsquare = prefs.myGridsquare.first(),
+                myName = prefs.myName.first(),
+                myRig = prefs.myRig.first(),
+                myDxcc = prefs.myDxcc.first(),
                 defaultRstSent = prefs.defaultRstSent.first(),
                 defaultRstRcvd = prefs.defaultRstRcvd.first(),
-                defaultBand    = prefs.defaultBand.first(),
-                defaultMode    = prefs.defaultMode.first(),
-                defaultTxpwr   = prefs.defaultTxpwr.first(),
-                radiusSotaM    = prefs.radiusSotaM.first().toString(),
-                radiusPotaM    = prefs.radiusPotaM.first().toString(),
-                radiusWwffM    = prefs.radiusWwffM.first().toString(),
-                radiusCotaM    = prefs.radiusCotaM.first().toString(),
-                radiusIotaM    = prefs.radiusIotaM.first().toString(),
-                refsSyncNote   = prefs.refsLastSyncNote.first()
+                defaultBand = prefs.defaultBand.first(),
+                defaultMode = prefs.defaultMode.first(),
+                defaultTxpwr = prefs.defaultTxpwr.first(),
+                radiusSotaM = prefs.radiusSotaM.first().toString(),
+                radiusPotaM = prefs.radiusPotaM.first().toString(),
+                radiusWwffM = prefs.radiusWwffM.first().toString(),
+                radiusCotaM = prefs.radiusCotaM.first().toString(),
+                radiusIotaM = prefs.radiusIotaM.first().toString(),
+                refsSyncNote = prefs.refsLastSyncNote.first()
             )
             refreshCatalogStats()
         }
@@ -131,31 +127,27 @@ class SettingsViewModel(
         }
     }
 
-    fun updateDbHost(v: String)         = _state.update { it.copy(dbHost = v) }
-    fun updateDbPort(v: String)         = _state.update { it.copy(dbPort = v) }
-    fun updateDbName(v: String)         = _state.update { it.copy(dbName = v) }
-    fun updateDbUser(v: String)         = _state.update { it.copy(dbUser = v) }
-    fun updateDbPassword(v: String)     = _state.update { it.copy(dbPassword = v) }
-    fun updateQrzUser(v: String)        = _state.update { it.copy(qrzUser = v) }
-    fun updateQrzPassword(v: String)    = _state.update { it.copy(qrzPassword = v) }
-    fun updateHamqthUser(v: String)     = _state.update { it.copy(hamqthUser = v) }
+    fun updateApiUrl(v: String) = _state.update { it.copy(apiUrl = v) }
+    fun updateQrzUser(v: String) = _state.update { it.copy(qrzUser = v) }
+    fun updateQrzPassword(v: String) = _state.update { it.copy(qrzPassword = v) }
+    fun updateHamqthUser(v: String) = _state.update { it.copy(hamqthUser = v) }
     fun updateHamqthPassword(v: String) = _state.update { it.copy(hamqthPassword = v) }
-    fun updateClublogApiKey(v: String)  = _state.update { it.copy(clublogApiKey = v) }
-    fun updateMyCallsign(v: String)     = _state.update { it.copy(myCallsign = v.uppercase()) }
-    fun updateMyGridsquare(v: String)   = _state.update { it.copy(myGridsquare = v.uppercase()) }
-    fun updateMyName(v: String)         = _state.update { it.copy(myName = v) }
-    fun updateMyRig(v: String)          = _state.update { it.copy(myRig = v) }
-    fun updateMyDxcc(v: String)         = _state.update { it.copy(myDxcc = v.filter(Char::isDigit).take(4)) }
+    fun updateClublogApiKey(v: String) = _state.update { it.copy(clublogApiKey = v) }
+    fun updateMyCallsign(v: String) = _state.update { it.copy(myCallsign = v.uppercase()) }
+    fun updateMyGridsquare(v: String) = _state.update { it.copy(myGridsquare = v.uppercase()) }
+    fun updateMyName(v: String) = _state.update { it.copy(myName = v) }
+    fun updateMyRig(v: String) = _state.update { it.copy(myRig = v) }
+    fun updateMyDxcc(v: String) = _state.update { it.copy(myDxcc = v.filter(Char::isDigit).take(4)) }
     fun updateDefaultRstSent(v: String) = _state.update { it.copy(defaultRstSent = v) }
     fun updateDefaultRstRcvd(v: String) = _state.update { it.copy(defaultRstRcvd = v) }
-    fun updateDefaultBand(v: String)    = _state.update { it.copy(defaultBand = v) }
-    fun updateDefaultMode(v: String)    = _state.update { it.copy(defaultMode = v) }
-    fun updateDefaultTxpwr(v: String)   = _state.update { it.copy(defaultTxpwr = v) }
-    fun updateRadiusSota(v: String)     = _state.update { it.copy(radiusSotaM = v.filter(Char::isDigit).take(5)) }
-    fun updateRadiusPota(v: String)     = _state.update { it.copy(radiusPotaM = v.filter(Char::isDigit).take(5)) }
-    fun updateRadiusWwff(v: String)     = _state.update { it.copy(radiusWwffM = v.filter(Char::isDigit).take(5)) }
-    fun updateRadiusCota(v: String)     = _state.update { it.copy(radiusCotaM = v.filter(Char::isDigit).take(5)) }
-    fun updateRadiusIota(v: String)     = _state.update { it.copy(radiusIotaM = v.filter(Char::isDigit).take(5)) }
+    fun updateDefaultBand(v: String) = _state.update { it.copy(defaultBand = v) }
+    fun updateDefaultMode(v: String) = _state.update { it.copy(defaultMode = v) }
+    fun updateDefaultTxpwr(v: String) = _state.update { it.copy(defaultTxpwr = v) }
+    fun updateRadiusSota(v: String) = _state.update { it.copy(radiusSotaM = v.filter(Char::isDigit).take(5)) }
+    fun updateRadiusPota(v: String) = _state.update { it.copy(radiusPotaM = v.filter(Char::isDigit).take(5)) }
+    fun updateRadiusWwff(v: String) = _state.update { it.copy(radiusWwffM = v.filter(Char::isDigit).take(5)) }
+    fun updateRadiusCota(v: String) = _state.update { it.copy(radiusCotaM = v.filter(Char::isDigit).take(5)) }
+    fun updateRadiusIota(v: String) = _state.update { it.copy(radiusIotaM = v.filter(Char::isDigit).take(5)) }
 
     fun syncActivityRefs() {
         viewModelScope.launch(Dispatchers.IO) {
@@ -209,16 +201,9 @@ class SettingsViewModel(
     }
 
     fun testDbConnection() {
-        val s = _state.value
         viewModelScope.launch {
             _state.update { it.copy(isTestingDb = true, dbTestResult = null) }
-            prefs.update {
-                it[AppPrefs.DB_HOST]     = s.dbHost
-                it[AppPrefs.DB_PORT]     = s.dbPort.toIntOrNull() ?: 3306
-                it[AppPrefs.DB_NAME]     = s.dbName
-                it[AppPrefs.DB_USER]     = s.dbUser
-                it[AppPrefs.DB_PASSWORD] = s.dbPassword
-            }
+            authStore.apiBaseUrl = _state.value.apiUrl
             repository.testDbConnection().fold(
                 onSuccess = {
                     _state.update {
@@ -248,32 +233,28 @@ class SettingsViewModel(
         val s = _state.value
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
+            authStore.apiBaseUrl = s.apiUrl
             prefs.update {
-                it[AppPrefs.DB_HOST]          = s.dbHost
-                it[AppPrefs.DB_PORT]          = s.dbPort.toIntOrNull() ?: 3306
-                it[AppPrefs.DB_NAME]          = s.dbName
-                it[AppPrefs.DB_USER]          = s.dbUser
-                it[AppPrefs.DB_PASSWORD]      = s.dbPassword
-                it[AppPrefs.QRZ_USER]         = s.qrzUser
-                it[AppPrefs.QRZ_PASSWORD]     = s.qrzPassword
-                it[AppPrefs.HAMQTH_USER]      = s.hamqthUser
-                it[AppPrefs.HAMQTH_PASSWORD]  = s.hamqthPassword
-                it[AppPrefs.CLUBLOG_API_KEY]  = s.clublogApiKey
-                it[AppPrefs.MY_CALLSIGN]      = s.myCallsign
-                it[AppPrefs.MY_GRIDSQUARE]    = s.myGridsquare
-                it[AppPrefs.MY_NAME]          = s.myName
-                it[AppPrefs.MY_RIG]           = s.myRig
-                it[AppPrefs.MY_DXCC]          = s.myDxcc
+                it[AppPrefs.QRZ_USER] = s.qrzUser
+                it[AppPrefs.QRZ_PASSWORD] = s.qrzPassword
+                it[AppPrefs.HAMQTH_USER] = s.hamqthUser
+                it[AppPrefs.HAMQTH_PASSWORD] = s.hamqthPassword
+                it[AppPrefs.CLUBLOG_API_KEY] = s.clublogApiKey
+                it[AppPrefs.MY_CALLSIGN] = s.myCallsign
+                it[AppPrefs.MY_GRIDSQUARE] = s.myGridsquare
+                it[AppPrefs.MY_NAME] = s.myName
+                it[AppPrefs.MY_RIG] = s.myRig
+                it[AppPrefs.MY_DXCC] = s.myDxcc
                 it[AppPrefs.DEFAULT_RST_SENT] = s.defaultRstSent
                 it[AppPrefs.DEFAULT_RST_RCVD] = s.defaultRstRcvd
-                it[AppPrefs.DEFAULT_BAND]     = s.defaultBand
-                it[AppPrefs.DEFAULT_MODE]     = s.defaultMode
-                it[AppPrefs.DEFAULT_TXPWR]    = s.defaultTxpwr
-                it[AppPrefs.RADIUS_SOTA_M]    = s.radiusSotaM.toIntOrNull()?.coerceAtLeast(1) ?: 200
-                it[AppPrefs.RADIUS_POTA_M]    = s.radiusPotaM.toIntOrNull()?.coerceAtLeast(1) ?: 800
-                it[AppPrefs.RADIUS_WWFF_M]    = s.radiusWwffM.toIntOrNull()?.coerceAtLeast(1) ?: 500
-                it[AppPrefs.RADIUS_COTA_M]    = s.radiusCotaM.toIntOrNull()?.coerceAtLeast(1) ?: 1000
-                it[AppPrefs.RADIUS_IOTA_M]    = s.radiusIotaM.toIntOrNull()?.coerceAtLeast(1) ?: 5000
+                it[AppPrefs.DEFAULT_BAND] = s.defaultBand
+                it[AppPrefs.DEFAULT_MODE] = s.defaultMode
+                it[AppPrefs.DEFAULT_TXPWR] = s.defaultTxpwr
+                it[AppPrefs.RADIUS_SOTA_M] = s.radiusSotaM.toIntOrNull()?.coerceAtLeast(1) ?: 200
+                it[AppPrefs.RADIUS_POTA_M] = s.radiusPotaM.toIntOrNull()?.coerceAtLeast(1) ?: 800
+                it[AppPrefs.RADIUS_WWFF_M] = s.radiusWwffM.toIntOrNull()?.coerceAtLeast(1) ?: 500
+                it[AppPrefs.RADIUS_COTA_M] = s.radiusCotaM.toIntOrNull()?.coerceAtLeast(1) ?: 1000
+                it[AppPrefs.RADIUS_IOTA_M] = s.radiusIotaM.toIntOrNull()?.coerceAtLeast(1) ?: 5000
             }
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
         }

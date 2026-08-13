@@ -106,11 +106,8 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.osmdroid.android)
+    implementation(libs.androidx.security.crypto)
     coreLibraryDesugaring(libs.desugar.jdk.libs)
-
-    // MySQL JDBC 5.1.x – Android-kompatibel (8.x referenziert java.sql.SQLType,
-    // das auf Android < API 24 fehlt und nicht desugared wird).
-    implementation("mysql:mysql-connector-java:5.1.49")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

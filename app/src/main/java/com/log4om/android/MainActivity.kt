@@ -5,6 +5,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.annotation.StringRes
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
@@ -14,6 +16,7 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
@@ -22,6 +25,7 @@ import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.*
 import com.log4om.android.data.model.Qso
 import com.log4om.android.ui.components.UpdateAvailableDialog
+import com.log4om.android.ui.screens.LoginScreen
 import com.log4om.android.ui.screens.LogListScreen
 import com.log4om.android.ui.screens.NewQsoScreen
 import com.log4om.android.ui.screens.SettingsScreen
@@ -34,9 +38,9 @@ sealed class Screen(
     val selectedIcon: ImageVector,
     val unselectedIcon: ImageVector
 ) {
-    object Log      : Screen("log",      R.string.nav_log,      Icons.AutoMirrored.Filled.LibraryBooks, Icons.AutoMirrored.Outlined.LibraryBooks)
-    object NewQso   : Screen("new_qso",  R.string.nav_new_qso,  Icons.Filled.Add,            Icons.Filled.Add)
-    object Settings : Screen("settings", R.string.nav_settings, Icons.Filled.Settings,       Icons.Outlined.Settings)
+    object Log : Screen("log", R.string.nav_log, Icons.AutoMirrored.Filled.LibraryBooks, Icons.AutoMirrored.Outlined.LibraryBooks)
+    object NewQso : Screen("new_qso", R.string.nav_new_qso, Icons.Filled.Add, Icons.Filled.Add)
+    object Settings : Screen("settings", R.string.nav_settings, Icons.Filled.Settings, Icons.Outlined.Settings)
 }
 
 private val NAV_ITEMS = listOf(Screen.Log, Screen.NewQso, Screen.Settings)
@@ -57,12 +61,27 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 private fun Log4OMNavHost(factory: AppViewModelFactory) {
+    val authViewModel: AuthViewModel = viewModel(factory = factory)
+    val authState by authViewModel.state.collectAsState()
+
+    if (!authState.ready) {
+        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
+        }
+        return
+    }
+
+    if (!authState.loggedIn) {
+        LoginScreen(authViewModel)
+        return
+    }
+
     val navController = rememberNavController()
 
-    val logViewModel:      LogViewModel      = viewModel(factory = factory)
-    val newQsoViewModel:   NewQsoViewModel   = viewModel(factory = factory)
+    val logViewModel: LogViewModel = viewModel(factory = factory)
+    val newQsoViewModel: NewQsoViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
-    val updateViewModel:   UpdateViewModel   = viewModel(factory = factory)
+    val updateViewModel: UpdateViewModel = viewModel(factory = factory)
 
     val navBackStack by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStack?.destination?.route
@@ -146,9 +165,9 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
             }
             composable(Screen.NewQso.route) {
                 NewQsoScreen(
-                    viewModel    = newQsoViewModel,
-                    editQso      = editQso,
-                    onSaved      = {
+                    viewModel = newQsoViewModel,
+                    editQso = editQso,
+                    onSaved = {
                         logViewModel.refresh()
                         navController.navigate(Screen.Log.route) {
                             popUpTo(Screen.Log.route) { inclusive = true }
@@ -164,7 +183,8 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     viewModel = settingsViewModel,
-                    updateViewModel = updateViewModel
+                    updateViewModel = updateViewModel,
+                    onLogout = authViewModel::logout
                 )
             }
         }

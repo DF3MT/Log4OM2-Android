@@ -21,10 +21,13 @@ class AppViewModelFactory(private val app: Log4OMApp) : ViewModelProvider.Factor
                 app.prefs,
                 app.repository,
                 app.referenceCatalog,
-                app.referenceSyncService
+                app.referenceSyncService,
+                app.authStore
             ) as T
         modelClass.isAssignableFrom(UpdateViewModel::class.java) ->
             UpdateViewModel(app) as T
+        modelClass.isAssignableFrom(AuthViewModel::class.java) ->
+            AuthViewModel(app.authStore, app.api) as T
         else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
     }
 }
