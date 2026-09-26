@@ -1,0 +1,68 @@
+@import "tailwindcss";
+
+:root {
+  --sand: #e8c9a0;
+  --sand-deep: #d4b48a;
+  --night: #0e1520;
+  --night-mid: #1a2838;
+  --mist: #9aa8bc;
+  --paper: #f4f6f8;
+  --ink: #121820;
+  --signal: #2f6fed;
+  --signal-hover: #4a84f5;
+  --marker: #c62828;
+  --line: rgba(255, 255, 255, 0.12);
+  --background: var(--night);
+  --foreground: var(--paper);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans-family);
+  --font-mono: var(--font-mono-family);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--night);
+  color: var(--paper);
+  font-family: var(--font-sans-family), "Segoe UI", sans-serif;
+}
+
+.sky {
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(900px 420px at 78% -8%, rgba(47, 111, 237, 0.28), transparent 60%),
+    radial-gradient(700px 380px at 12% 110%, rgba(232, 201, 160, 0.12), transparent 55%),
+    linear-gradient(165deg, var(--night-mid) 0%, var(--night) 48%, #0a1018 100%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.brand-bar {
+  background: linear-gradient(90deg, var(--sand), var(--sand-deep));
+  color: var(--ink);
+  padding: 0.85rem 1.25rem;
+  border-bottom: 3px solid var(--marker);
+}
+
+.brand-bar strong {
+  font-size: clamp(1.1rem, 2.2vw, 1.4rem);
+  letter-spacing: 0.02em;
+  font-weight: 700;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}

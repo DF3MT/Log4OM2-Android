@@ -1,0 +1,25 @@
+# /srv/log4om-web.df3mt.de — Next.js web only
+# Images from GitHub Actions → GHCR. Host only pulls (no build).
+#
+#   cd /srv/log4om-web.df3mt.de && docker compose pull && docker compose up -d --no-build
+#
+# Publishes web on host :8081
+# Joins external network "log4om" (created by API stack) → API_URL=http://api:8080
+
+services:
+  web:
+    image: ghcr.io/df3mt/log4om-web:latest
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "8081:3000"
+    environment:
+      API_URL: ${API_URL:-http://api:8080}
+      NODE_ENV: production
+    networks:
+      - log4om
+
+networks:
+  log4om:
+    external: true
+    name: log4om
