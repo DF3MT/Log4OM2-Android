@@ -1,0 +1,61 @@
+server:
+  port: ${PORT:8080}
+  forward-headers-strategy: framework
+
+spring:
+  application:
+    name: log4om-api
+  datasource:
+    url: ${DATABASE_URL:jdbc:postgresql://localhost:5432/log4om_platform}
+    username: ${DATABASE_USER:log4om}
+    password: ${DATABASE_PASSWORD:log4om}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+log4om:
+  jwt:
+    secret: ${JWT_SECRET:change-me-to-a-long-random-secret-at-least-32-chars}
+    access-token-minutes: ${JWT_ACCESS_MINUTES:15}
+    refresh-token-days: ${JWT_REFRESH_DAYS:7}
+  encryption:
+    key: ${ENCRYPTION_KEY:0123456789abcdef0123456789abcdef}
+  cors:
+    # "*" allows any browser Origin (LAN IPs included). Override in production if desired.
+    allowed-origins: ${CORS_ORIGIN:*}
+  tenant:
+    pool-max-size: 5
+    pool-idle-timeout-ms: 600000
+    connection-timeout-ms: 5000
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+logging:
+  level:
+    com.log4om: INFO

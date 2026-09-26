@@ -1,0 +1,56 @@
+# /srv/log4om-api.df3mt.de — API + Postgres only
+# Images from GitHub Actions → GHCR. Host only pulls (no build).
+#
+#   cd /srv/log4om-api.df3mt.de && docker compose pull && docker compose up -d --no-build
+#
+# Publishes API on host :8080
+# Shared network "log4om" for web stack at /srv/log4om-web.df3mt.de
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    pull_policy: always
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-log4om_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-log4om}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - log4om
+
+  api:
+    image: ghcr.io/df3mt/log4om-api:latest
+    restart: unless-stopped
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-log4om_platform}
+      DATABASE_USER: ${POSTGRES_USER:-log4om}
+      DATABASE_PASSWORD: ${POSTGRES_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?set ENCRYPTION_KEY}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      PORT: "8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      log4om:
+        aliases:
+          - api
+
+networks:
+  log4om:
+    name: log4om
+    driver: bridge
+
+volumes:
+  pgdata:

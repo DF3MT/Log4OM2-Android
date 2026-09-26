@@ -1,0 +1,42 @@
+# Local/dev stack — pulls GHCR images (built by GitHub Actions). No local build.
+# For source build during development, use: ./gradlew bootJar && docker build ...
+#
+#   docker compose -f docker-compose.dev.yml pull
+#   docker compose -f docker-compose.dev.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    pull_policy: always
+    environment:
+      POSTGRES_DB: log4om_platform
+      POSTGRES_USER: log4om
+      POSTGRES_PASSWORD: log4om
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U log4om -d log4om_platform"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    image: ghcr.io/df3mt/log4om-api:latest
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/log4om_platform
+      DATABASE_USER: log4om
+      DATABASE_PASSWORD: log4om
+      JWT_SECRET: local-dev-jwt-secret-change-me-32chars
+      ENCRYPTION_KEY: 0123456789abcdef0123456789abcdef
+      CORS_ORIGIN: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  pgdata:

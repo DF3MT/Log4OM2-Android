@@ -1,0 +1,53 @@
+# Full stack using GHCR images only (no local build).
+# Build happens in GitHub Actions on push to main.
+#
+#   docker compose -f docker-compose.stack.yml pull
+#   docker compose -f docker-compose.stack.yml up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    pull_policy: always
+    environment:
+      POSTGRES_DB: log4om_platform
+      POSTGRES_USER: log4om
+      POSTGRES_PASSWORD: log4om
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U log4om -d log4om_platform"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/df3mt/log4om-api:latest
+    pull_policy: always
+    ports:
+      - "8080:8080"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/log4om_platform
+      DATABASE_USER: log4om
+      DATABASE_PASSWORD: log4om
+      JWT_SECRET: change-me-to-a-long-random-secret-at-least-32-chars
+      ENCRYPTION_KEY: "0123456789abcdef0123456789abcdef"
+      CORS_ORIGIN: "*"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/df3mt/log4om-web:latest
+    pull_policy: always
+    ports:
+      - "3000:3000"
+    environment:
+      API_URL: http://api:8080
+    depends_on:
+      - api
+    restart: unless-stopped
+
+volumes:
+  pgdata:
