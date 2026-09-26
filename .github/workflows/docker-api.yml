@@ -1,35 +1,41 @@
-name: Docker publish
+name: API Docker publish
 
 on:
   push:
     branches: [main]
+    paths:
+      - "api/**"
+      - ".github/workflows/docker-api.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
   packages: write
 
+defaults:
+  run:
+    working-directory: api
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-java@v5
         with:
-          node-version: "22"
-          cache: npm
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            api/**/*.gradle*
+            api/**/*.gradle.kts
+            api/gradle/wrapper/gradle-wrapper.properties
 
-      - name: Install
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
-
-      - name: Build
-        run: npm run build
-        env:
-          NEXT_PUBLIC_API_URL: https://api.example.com
+      - name: Unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test --no-daemon
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -45,7 +51,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/log4om-web
+          images: ghcr.io/${{ github.repository_owner }}/log4om-api
           tags: |
             type=sha,prefix=
             type=raw,value=latest,enable={{is_default_branch}}
@@ -53,11 +59,9 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: api
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
