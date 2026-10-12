@@ -24,9 +24,9 @@ export class ApiError extends Error {
 }
 
 function apiBase(): string {
-  // Prefer same-origin Next.js rewrite proxy (no CORS).
+  // Same-origin /api is proxied to the Spring API (NPM vhost or Next).
   if (typeof window !== "undefined") {
-    return `${window.location.origin}/backend`;
+    return `${window.location.origin}/api`;
   }
   const env = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "") || "";
   return env || "http://127.0.0.1:8080";

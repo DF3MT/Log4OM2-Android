@@ -78,7 +78,7 @@ fun LoginScreen(viewModel: AuthViewModel) {
                 value = state.apiUrl,
                 onValueChange = viewModel::updateApiUrl,
                 label = { Text(stringResource(R.string.api_url)) },
-                placeholder = { Text("http://192.168.x.x:8080") },
+                placeholder = { Text("https://log4om.df3mt.de/api") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri)

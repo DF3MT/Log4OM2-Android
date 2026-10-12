@@ -24,7 +24,18 @@ class AuthTokenStore(context: Context) {
     }
 
     var apiBaseUrl: String
-        get() = prefs.getString(KEY_API_URL, DEFAULT_API_URL)?.trimEnd('/') ?: DEFAULT_API_URL
+        get() {
+            val stored = prefs.getString(KEY_API_URL, null)?.trim()?.trimEnd('/')
+            val resolved = if (stored.isNullOrBlank() || stored in LEGACY_API_URLS) {
+                DEFAULT_API_URL
+            } else {
+                stored
+            }
+            if (stored != resolved) {
+                prefs.edit().putString(KEY_API_URL, resolved).apply()
+            }
+            return resolved
+        }
         set(value) = prefs.edit().putString(KEY_API_URL, value.trim().trimEnd('/')).apply()
 
     var accessToken: String?
@@ -67,8 +78,14 @@ class AuthTokenStore(context: Context) {
     }
 
     companion object {
-        /** LAN API on LXC 113. Override on the login screen if needed. */
-        const val DEFAULT_API_URL = "http://192.168.96.191:8080"
+        /** Public portal. /api is proxied to the Log4OM API. */
+        const val DEFAULT_API_URL = "https://log4om.df3mt.de/api"
+        private val LEGACY_API_URLS = setOf(
+            "http://192.168.96.191:8080",
+            "http://10.0.2.2:8080",
+            "https://log4om-api.df3mt.de",
+            "http://log4om-api.df3mt.de",
+        )
         private const val KEY_API_URL = "api_base_url"
         private const val KEY_ACCESS = "access_token"
         private const val KEY_REFRESH = "refresh_token"
