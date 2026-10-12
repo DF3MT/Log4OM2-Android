@@ -4,6 +4,8 @@ import type {
   DbConfigRequest,
   LogFilter,
   LookupCredentials,
+  LookupTestRequest,
+  LookupTestResult,
   Qso,
   StationProfile,
   TokenResponse,
@@ -33,6 +35,7 @@ type RequestOpts = {
   auth?: boolean;
   formData?: FormData;
   raw?: boolean;
+  signal?: AbortSignal;
 };
 
 let refreshPromise: Promise<boolean> | null = null;
@@ -88,6 +91,7 @@ async function apiFetch<T>(path: string, opts: RequestOpts = {}): Promise<T> {
           ? JSON.stringify(opts.body)
           : undefined,
       cache: "no-store",
+      signal: opts.signal,
     });
   };
 
@@ -115,7 +119,21 @@ async function apiFetch<T>(path: string, opts: RequestOpts = {}): Promise<T> {
   if (res.status === 204) return undefined as T;
   const text = await res.text();
   if (!text) return undefined as T;
-  return JSON.parse(text) as T;
+  return parseJson(text) as T;
+}
+
+/** Log4OM qsoid values are 17 digits and are not safe JSON numbers in JS. */
+function parseJson(text: string): unknown {
+  const safe = text.replace(
+    /([:[,]\s*)(-?\d{16,})(?=\s*[,}\]])/g,
+    '$1"$2"',
+  );
+  return JSON.parse(safe);
+}
+
+function asQso(qso: Qso): Qso {
+  if (qso.qsoid == null || qso.qsoid === "") return qso;
+  return { ...qso, qsoid: String(qso.qsoid) };
 }
 
 function filterQuery(filter: LogFilter, limit?: number, offset?: number): string {
@@ -159,9 +177,10 @@ export const api = {
   putDbConfig(body: DbConfigRequest) {
     return apiFetch<DbConfig>("/me/db-config", { method: "PUT", body });
   },
-  testDbConfig() {
+  testDbConfig(body: DbConfigRequest) {
     return apiFetch<{ ok: boolean; message: string }>("/me/db-config/test", {
       method: "POST",
+      body,
     });
   },
   getLookup() {
@@ -173,25 +192,33 @@ export const api = {
       body,
     });
   },
-  listQsos(filter: LogFilter, limit = 50, offset = 0) {
-    return apiFetch<Qso[]>(`/qsos${filterQuery(filter, limit, offset)}`);
+  testLookup(body: LookupTestRequest) {
+    return apiFetch<LookupTestResult>("/me/lookup-credentials/test", {
+      method: "POST",
+      body,
+    });
   },
-  countQsos(filter: LogFilter) {
-    return apiFetch<{ count: number }>(`/qsos/count${filterQuery(filter)}`);
+  listQsos(filter: LogFilter, limit = 50, offset = 0, signal?: AbortSignal) {
+    return apiFetch<Qso[]>(`/qsos${filterQuery(filter, limit, offset)}`, {
+      signal,
+    }).then((rows) => rows.map(asQso));
   },
-  getQso(id: number) {
-    return apiFetch<Qso>(`/qsos/${id}`);
+  countQsos(filter: LogFilter, signal?: AbortSignal) {
+    return apiFetch<{ count: number }>(`/qsos/count${filterQuery(filter)}`, { signal });
+  },
+  getQso(id: string) {
+    return apiFetch<Qso>(`/qsos/${id}`).then(asQso);
   },
   createQso(body: Qso) {
-    return apiFetch<Qso>("/qsos", { method: "POST", body });
+    return apiFetch<Qso>("/qsos", { method: "POST", body }).then(asQso);
   },
-  updateQso(id: number, body: Qso) {
-    return apiFetch<Qso>(`/qsos/${id}`, { method: "PUT", body });
+  updateQso(id: string, body: Qso) {
+    return apiFetch<Qso>(`/qsos/${id}`, { method: "PUT", body }).then(asQso);
   },
-  deleteQso(id: number) {
+  deleteQso(id: string) {
     return apiFetch<void>(`/qsos/${id}`, { method: "DELETE" });
   },
-  async exportAdif(ids: number[]) {
+  async exportAdif(ids: string[]) {
     const res = await apiFetch<Response>("/adif/export", {
       method: "POST",
       body: { ids },

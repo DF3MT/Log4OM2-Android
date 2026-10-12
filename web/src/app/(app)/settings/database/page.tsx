@@ -89,9 +89,16 @@ export default function DatabaseSettingsPage() {
     setError("");
     setMsg("");
     try {
-      const r = await api.testDbConfig();
-      setMsg(r.ok ? `OK: ${r.message}` : r.message);
-      if (!r.ok) setError(r.message);
+      const r = await api.testDbConfig({
+        host: form.host,
+        port: form.port,
+        database: form.database,
+        username: form.username,
+        password: form.password || undefined,
+        sslEnabled: form.sslEnabled,
+      });
+      if (r.ok) setMsg(`OK: ${r.message}`);
+      else setError(r.message);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Test failed");
     } finally {

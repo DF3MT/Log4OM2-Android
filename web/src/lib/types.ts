@@ -51,8 +51,28 @@ export type LookupCredentials = {
   clublogApiKeySet: boolean;
 };
 
+export type LookupProvider = "qrz" | "hamqth" | "clublog";
+
+export type LookupTestRequest = {
+  provider: LookupProvider;
+  qrzUser?: string | null;
+  qrzPassword?: string | null;
+  hamqthUser?: string | null;
+  hamqthPassword?: string | null;
+  clublogApiKey?: string | null;
+};
+
+export type LookupTestResult = {
+  ok: boolean;
+  provider: string;
+  message: string;
+  callsign?: string;
+  name?: string;
+  detail?: string;
+};
+
 export type Qso = {
-  qsoid?: number | null;
+  qsoid?: string | null;
   callsign: string;
   band: string;
   mode: string;
@@ -125,7 +145,7 @@ export function emptyQso(defaults?: Partial<Qso>): Qso {
     band: defaults?.band ?? "20m",
     mode: defaults?.mode ?? "SSB",
     qsodate: iso,
-    freq: 14.2,
+    freq: 14225,
     freqrx: 0,
     rstsent: defaults?.rstsent ?? "59",
     rstrcvd: defaults?.rstrcvd ?? "59",

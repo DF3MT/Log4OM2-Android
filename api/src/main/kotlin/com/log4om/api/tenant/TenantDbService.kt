@@ -84,23 +84,61 @@ class TenantDbService(
         return entity.toResponse()
     }
 
-    fun testConnection(principal: UserPrincipal): DbTestResponse {
-        val cfg = configs.findById(principal.tenantId).orElse(null)
-            ?: throw NotFoundException("Database not configured")
+    fun testConnection(principal: UserPrincipal, req: DbConfigRequest? = null): DbTestResponse {
+        val existing = configs.findById(principal.tenantId).orElse(null)
+        val probe = if (req != null && req.host.isNotBlank()) {
+            probeFromRequest(existing, req)
+        } else {
+            val cfg = existing ?: throw NotFoundException("Database not configured")
+            DbProbe(
+                host = cfg.host,
+                port = cfg.port,
+                database = cfg.databaseName,
+                username = cfg.username,
+                password = secretBox.decrypt(cfg.encryptedPassword),
+                sslEnabled = cfg.sslEnabled,
+                matchesStored = true
+            )
+        }
         return try {
             DriverManager.getConnection(
-                buildJdbcUrl(cfg),
-                cfg.username,
-                secretBox.decrypt(cfg.encryptedPassword)
+                jdbcUrl(probe.host, probe.port, probe.database, probe.sslEnabled),
+                probe.username,
+                probe.password
             ).use { conn ->
                 conn.createStatement().use { st -> st.executeQuery("SELECT 1").close() }
             }
-            cfg.lastTestOkAt = Instant.now()
-            configs.save(cfg)
+            if (probe.matchesStored && existing != null) {
+                existing.lastTestOkAt = Instant.now()
+                configs.save(existing)
+            }
             DbTestResponse(true, "Connected")
         } catch (e: Exception) {
             DbTestResponse(false, e.message ?: "Connection failed")
         }
+    }
+
+    private fun probeFromRequest(existing: TenantDbConfigEntity?, req: DbConfigRequest): DbProbe {
+        if (req.host.isBlank() || req.database.isBlank() || req.username.isBlank()) {
+            throw BadRequestException("host, database and username are required")
+        }
+        val password = when {
+            !req.password.isNullOrBlank() -> req.password
+            existing != null && existing.encryptedPassword.isNotBlank() ->
+                secretBox.decrypt(existing.encryptedPassword)
+            else -> throw BadRequestException("password is required on first test")
+        }
+        val host = req.host.trim()
+        val database = req.database.trim()
+        val username = req.username.trim()
+        val matchesStored = existing != null &&
+            req.password.isNullOrBlank() &&
+            existing.host == host &&
+            existing.port == req.port &&
+            existing.databaseName == database &&
+            existing.username == username &&
+            existing.sslEnabled == req.sslEnabled
+        return DbProbe(host, req.port, database, username, password, req.sslEnabled, matchesStored)
     }
 
     fun <T> withTenantConnection(tenantId: UUID, block: (Connection) -> T): T {
@@ -121,7 +159,7 @@ class TenantDbService(
     private fun createPool(cfg: TenantDbConfigEntity): HikariDataSource {
         val password = secretBox.decrypt(cfg.encryptedPassword)
         val hc = HikariConfig().apply {
-            jdbcUrl = buildJdbcUrl(cfg)
+            jdbcUrl = jdbcUrl(cfg.host, cfg.port, cfg.databaseName, cfg.sslEnabled)
             username = cfg.username
             this.password = password
             maximumPoolSize = props.tenant.poolMaxSize
@@ -147,10 +185,23 @@ class TenantDbService(
         lastTestOkAt = lastTestOkAt
     )
 
+    private data class DbProbe(
+        val host: String,
+        val port: Int,
+        val database: String,
+        val username: String,
+        val password: String,
+        val sslEnabled: Boolean,
+        val matchesStored: Boolean
+    )
+
     companion object {
-        fun buildJdbcUrl(cfg: TenantDbConfigEntity): String {
-            val ssl = if (cfg.sslEnabled) "true" else "false"
-            return "jdbc:mysql://${cfg.host}:${cfg.port}/${cfg.databaseName}" +
+        fun buildJdbcUrl(cfg: TenantDbConfigEntity): String =
+            jdbcUrl(cfg.host, cfg.port, cfg.databaseName, cfg.sslEnabled)
+
+        fun jdbcUrl(host: String, port: Int, database: String, sslEnabled: Boolean): String {
+            val ssl = if (sslEnabled) "true" else "false"
+            return "jdbc:mysql://$host:$port/$database" +
                 "?useSSL=$ssl&allowPublicKeyRetrieval=true" +
                 "&useUnicode=true&characterEncoding=UTF-8" +
                 "&serverTimezone=UTC&connectTimeout=5000&socketTimeout=15000"

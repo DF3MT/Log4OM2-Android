@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AppShell } from "@/components/AppShell";
-import { QsoForm } from "@/components/QsoForm";
+import { freqKhzForBand, QsoForm } from "@/components/QsoForm";
 import { useLocale } from "@/components/LocaleProvider";
 import { Alert, Card } from "@/components/ui";
 import { api } from "@/lib/api";
@@ -20,10 +20,12 @@ export default function NewQsoPage() {
     void api
       .getStation()
       .then((s: StationProfile) => {
+        const band = s.defaultBand || "20m";
         setQso(
           emptyQso({
-            band: s.defaultBand || "20m",
+            band,
             mode: s.defaultMode || "SSB",
+            freq: freqKhzForBand(band) || 14225,
             rstsent: s.defaultRstSent || "59",
             rstrcvd: s.defaultRstRcvd || "59",
             stationcallsign: s.callsign,
@@ -49,7 +51,12 @@ export default function NewQsoPage() {
             setSaving(true);
             setError("");
             try {
-              const created = await api.createQso(qso);
+              const created = await api.createQso({
+                ...qso,
+                freqrx: qso.freqrx || qso.freq,
+                bandrx: qso.bandrx || qso.band,
+              });
+              if (!created.qsoid) throw new Error("Save failed");
               router.replace(`/qso/${created.qsoid}/edit`);
             } catch (err) {
               setError(err instanceof Error ? err.message : "Save failed");

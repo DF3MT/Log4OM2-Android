@@ -160,13 +160,14 @@ class QsoDao {
             ?,?,?,?,?, ?,?,?,?, ?,?,?,?,?,?, ?,?,?,?,
             ?,?,?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?, ?,?,?,?,
             ?,?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?, ?,?,?,?,
-            ?,?,?,?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?, ?,?,?
+            ?,?,?,?,?,?, ?,?,?, ?,?,?,?,?, ?,?,?, ?
         )
     """.trimIndent()
 
     private val INSERT_IGNORE_SQL =
         INSERT_SQL.replaceFirst("INSERT INTO log", "INSERT IGNORE INTO log")
 
+    /** Fields the portal does not edit stay untouched (email, state, QSL, SIG, …). */
     private val UPDATE_SQL = """
         UPDATE log SET
             callsign=?, band=?, bandrx=?, mode=?, qsodate=?,
@@ -176,15 +177,25 @@ class QsoDao {
             stationcallsign=?, mygridsquare=?, myname=?, myrig=?,
             mycountry=?, mydxcc=?, mylat=?, mylon=?,
             txpwr=?, propmode=?, contestid=?,
-            address=?, email=?, pfx=?, state=?, cnty=?,
-            qslvia=?, qslmsg=?, eqcall=?,
-            contactedop=?, srxstring=?, stxstring=?,
+            address=?,
             satmode=?, satname=?, satelliteqso=?,
-            operator=?, sig=?, siginfo=?,
+            operator=?,
             lat=?, lon=?, distance=?,
             contactreferences=?
         WHERE qsoid=?
     """.trimIndent()
+
+    init {
+        val colList = INSERT_SQL.substringAfter("(").substringBefore(") VALUES")
+        val cols = colList.split(",").count { it.isNotBlank() }
+        val placeholders = INSERT_SQL.count { it == '?' }
+        require(cols == placeholders) {
+            "INSERT column count $cols != placeholder count $placeholders"
+        }
+        require(UPDATE_SQL.count { it == '?' } == 40) {
+            "UPDATE placeholder count ${UPDATE_SQL.count { it == '?' }} != 40"
+        }
+    }
 
     private fun PreparedStatement.bindQso(q: QsoDto, existingRefsJson: String?) {
         var i = 1
@@ -270,7 +281,7 @@ class QsoDao {
         var i = 1
         setString(i++, q.callsign.uppercase())
         setString(i++, q.band)
-        setString(i++, q.bandrx.ifBlank { q.band })
+        setString(i++, q.bandrx)
         setString(i++, q.mode)
         setTimestamp(i++, Timestamp.valueOf(q.qsodate.format(jdbcFmt)))
         setDouble(i++, q.freq)
@@ -299,22 +310,10 @@ class QsoDao {
         setString(i++, q.propmode)
         setString(i++, q.contestid)
         setString(i++, q.address)
-        setString(i++, "")
-        setString(i++, "")
-        setString(i++, "")
-        setString(i++, "")
-        setString(i++, "")
-        setString(i++, "")
-        setNull(i++, Types.VARCHAR)
-        setString(i++, "")
-        setString(i++, "")
-        setString(i++, "")
         setString(i++, q.satmode)
         setString(i++, q.satname)
         setInt(i++, q.satelliteqso)
         setString(i++, q.operator)
-        setString(i++, "")
-        setString(i++, "")
         if (q.lat != null) setDouble(i++, q.lat) else setNull(i++, Types.DECIMAL)
         if (q.lon != null) setDouble(i++, q.lon) else setNull(i++, Types.DECIMAL)
         if (q.distance != null) setDouble(i++, q.distance) else setNull(i++, Types.DECIMAL)

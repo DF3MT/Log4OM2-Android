@@ -1,5 +1,8 @@
 package com.log4om.api.me
 
+import com.log4om.api.lookup.LookupCredentialTestService
+import com.log4om.api.lookup.LookupTestRequest
+import com.log4om.api.lookup.LookupTestResponse
 import com.log4om.api.platform.LookupCredentialsEntity
 import com.log4om.api.platform.LookupCredentialsRepository
 import com.log4om.api.platform.StationProfileEntity
@@ -47,7 +50,8 @@ class MeController(
     private val stations: StationProfileRepository,
     private val lookups: LookupCredentialsRepository,
     private val tenantDb: TenantDbService,
-    private val secretBox: SecretBox
+    private val secretBox: SecretBox,
+    private val lookupTests: LookupCredentialTestService
 ) {
     @GetMapping("/station")
     fun getStation(@AuthenticationPrincipal principal: UserPrincipal): StationProfileDto {
@@ -87,7 +91,10 @@ class MeController(
     ) = tenantDb.upsertConfig(principal, body)
 
     @PostMapping("/db-config/test")
-    fun testDb(@AuthenticationPrincipal principal: UserPrincipal) = tenantDb.testConnection(principal)
+    fun testDb(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestBody(required = false) body: DbConfigRequest?
+    ) = tenantDb.testConnection(principal, body)
 
     @GetMapping("/lookup-credentials")
     fun getLookup(@AuthenticationPrincipal principal: UserPrincipal): LookupCredentialsDto {
@@ -116,6 +123,12 @@ class MeController(
         lookups.save(c)
         return getLookup(principal)
     }
+
+    @PostMapping("/lookup-credentials/test")
+    fun testLookup(
+        @AuthenticationPrincipal principal: UserPrincipal,
+        @RequestBody body: LookupTestRequest
+    ): LookupTestResponse = lookupTests.test(principal, body)
 
     private fun StationProfileEntity.toDto() = StationProfileDto(
         callsign, gridsquare, name, rig, dxcc,

@@ -4,6 +4,9 @@ import { FormEvent, useEffect, useState } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { Alert, Button, Card, Field, Input } from "@/components/ui";
 import { api } from "@/lib/api";
+import type { LookupProvider, LookupTestRequest } from "@/lib/types";
+
+type ProbeResult = { ok: boolean; text: string };
 
 export default function LookupSettingsPage() {
   const { tr } = useLocale();
@@ -20,6 +23,8 @@ export default function LookupSettingsPage() {
   const [msg, setMsg] = useState("");
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [testing, setTesting] = useState<LookupProvider | null>(null);
+  const [results, setResults] = useState<Partial<Record<LookupProvider, ProbeResult>>>({});
 
   useEffect(() => {
     void api
@@ -65,6 +70,65 @@ export default function LookupSettingsPage() {
     }
   };
 
+  const onTest = async (provider: LookupProvider) => {
+    setTesting(provider);
+    setResults((current) => ({ ...current, [provider]: undefined }));
+    const body: LookupTestRequest =
+      provider === "qrz"
+        ? { provider, qrzUser, qrzPassword: qrzPassword.trim() || null }
+        : provider === "hamqth"
+          ? {
+              provider,
+              hamqthUser,
+              hamqthPassword: hamqthPassword.trim() || null,
+            }
+          : { provider, clublogApiKey: clublogApiKey.trim() || null };
+    try {
+      const res = await api.testLookup(body);
+      setResults((current) => ({
+        ...current,
+        [provider]: {
+          ok: res.ok,
+          text: res.message || (res.ok ? "OK" : "Lookup failed"),
+        },
+      }));
+    } catch (err) {
+      setResults((current) => ({
+        ...current,
+        [provider]: {
+          ok: false,
+          text: err instanceof Error ? err.message : "Lookup failed",
+        },
+      }));
+    } finally {
+      setTesting(null);
+    }
+  };
+
+  const probe = (provider: LookupProvider, label: string) => {
+    const result = results[provider];
+    return (
+      <div className="sm:col-span-2 grid gap-2">
+        <div>
+          <Button
+            type="button"
+            variant="ghost"
+            disabled={busy || testing !== null}
+            onClick={() => void onTest(provider)}
+          >
+            {testing === provider ? tr("loading") : label}
+          </Button>
+        </div>
+        {result &&
+          (result.ok ? (
+            <p className="text-sm text-[var(--sand)]">{result.text}</p>
+          ) : (
+            <Alert>{result.text}</Alert>
+          ))}
+      </div>
+    );
+  };
+
   return (
     <Card title={tr("lookup")}>
       <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
@@ -85,6 +149,7 @@ export default function LookupSettingsPage() {
             onChange={(e) => setQrzPassword(e.target.value)}
           />
         </Field>
+        {probe("qrz", tr("testQrz"))}
         <Field label={tr("hamqthUser")}>
           <Input
             value={hamqthUser}
@@ -101,6 +166,7 @@ export default function LookupSettingsPage() {
             onChange={(e) => setHamqthPassword(e.target.value)}
           />
         </Field>
+        {probe("hamqth", tr("testHamqth"))}
         <Field label={tr("clublogKey")}>
           <Input
             type="password"
@@ -111,8 +177,9 @@ export default function LookupSettingsPage() {
             onChange={(e) => setClublogApiKey(e.target.value)}
           />
         </Field>
+        {probe("clublog", tr("testClublog"))}
         <div className="sm:col-span-2">
-          <Button type="submit" disabled={busy}>
+          <Button type="submit" disabled={busy || testing !== null}>
             {tr("save")}
           </Button>
         </div>

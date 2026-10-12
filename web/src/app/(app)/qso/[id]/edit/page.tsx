@@ -13,13 +13,14 @@ export default function EditQsoPage() {
   const { tr } = useLocale();
   const router = useRouter();
   const params = useParams<{ id: string }>();
-  const id = Number(params.id);
+  const id = Array.isArray(params.id) ? params.id[0] : params.id;
   const [qso, setQso] = useState<Qso | null>(null);
   const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!id) return;
+    if (!id || !/^\d+$/.test(id)) return;
     void api
       .getQso(id)
       .then(setQso)
@@ -36,18 +37,30 @@ export default function EditQsoPage() {
             <Alert>{error}</Alert>
           </div>
         )}
+        {notice && (
+          <p className="mb-3 rounded-md border border-[var(--sand)]/40 bg-[var(--sand)]/10 px-3 py-2 text-sm text-[var(--sand)]">
+            {notice}
+          </p>
+        )}
         {!qso ? (
-          <p className="text-[var(--mist)]">{tr("loading")}</p>
+          <p className="text-[var(--mist)]">{error ? "" : tr("loading")}</p>
         ) : (
           <QsoForm
             value={qso}
-            onChange={setQso}
+            onChange={(next) => {
+              setNotice("");
+              setQso(next);
+            }}
             saving={saving}
             onSubmit={async () => {
               setSaving(true);
               setError("");
+              setNotice("");
               try {
-                await api.updateQso(id, qso);
+                if (!id) return;
+                const updated = await api.updateQso(id, qso);
+                setQso(updated);
+                setNotice(tr("saved"));
               } catch (err) {
                 setError(err instanceof Error ? err.message : "Save failed");
               } finally {
@@ -57,6 +70,7 @@ export default function EditQsoPage() {
             onDelete={async () => {
               setSaving(true);
               try {
+                if (!id) return;
                 await api.deleteQso(id);
                 router.replace("/log");
               } catch (err) {

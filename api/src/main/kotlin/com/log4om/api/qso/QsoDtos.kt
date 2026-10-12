@@ -1,9 +1,13 @@
 package com.log4om.api.qso
 
+import com.fasterxml.jackson.annotation.JsonFormat
 import java.time.LocalDate
 import java.time.LocalDateTime
 
 data class QsoDto(
+    /** Log4OM ids are 17-digit timestamps and exceed JS Number.MAX_SAFE_INTEGER. */
+    @get:JsonFormat(shape = JsonFormat.Shape.STRING)
+    @param:JsonFormat(shape = JsonFormat.Shape.STRING)
     val qsoid: Long? = null,
     val callsign: String = "",
     val band: String = "",

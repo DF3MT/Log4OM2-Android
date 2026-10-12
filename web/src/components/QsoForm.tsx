@@ -1,12 +1,56 @@
 "use client";
 
+import { useEffect, useState, type FormEvent } from "react";
 import { useLocale } from "@/components/LocaleProvider";
 import { Button, Field, Input, Textarea } from "@/components/ui";
 import type { Qso } from "@/lib/types";
-import type { FormEvent } from "react";
 
-const BANDS = ["160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m", "6m", "2m", "70cm"];
-const MODES = ["SSB", "CW", "FT8", "FT4", "RTTY", "FM", "AM", "DIGITAL"];
+const BANDS = [
+  "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m", "12m", "10m",
+  "6m", "4m", "2m", "70cm", "23cm",
+];
+const MODES = [
+  "SSB", "CW", "FM", "AM", "FT8", "FT4", "JS8", "JT65", "JT9", "RTTY",
+  "PSK31", "OLIVIA", "DIGITAL",
+];
+
+/** SSB calling area in MHz. Log4OM stores frequency in kHz. */
+const BAND_MHZ: Record<string, number> = {
+  "160m": 1.85,
+  "80m": 3.7,
+  "60m": 5.357,
+  "40m": 7.1,
+  "30m": 10.136,
+  "20m": 14.225,
+  "17m": 18.13,
+  "15m": 21.2,
+  "12m": 24.93,
+  "10m": 28.4,
+  "6m": 50.15,
+  "4m": 70.2,
+  "2m": 144.3,
+  "70cm": 432.1,
+  "23cm": 1296.1,
+};
+
+export function freqKhzForBand(band: string): number {
+  const mhz = BAND_MHZ[band];
+  return mhz ? Math.round(mhz * 1000) : 0;
+}
+
+function khzToMhzInput(khz: number): string {
+  if (!khz) return "";
+  return String(Math.round(khz) / 1000);
+}
+
+function withCurrent(options: string[], current: string): string[] {
+  if (!current || options.includes(current)) return options;
+  return [current, ...options];
+}
+
+function dateInputValue(iso: string): string {
+  return iso ? iso.slice(0, 19) : "";
+}
 
 export function QsoForm({
   value,
@@ -22,6 +66,13 @@ export function QsoForm({
   saving?: boolean;
 }) {
   const { tr } = useLocale();
+  const [freqMhz, setFreqMhz] = useState(() => khzToMhzInput(value.freq));
+
+  useEffect(() => {
+    setFreqMhz(khzToMhzInput(value.freq));
+    // Sync when the record or band changes. Typing updates freq without resetting the text.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value.qsoid, value.band]);
 
   const set = <K extends keyof Qso>(key: K, v: Qso[K]) =>
     onChange({ ...value, [key]: v });
@@ -30,6 +81,9 @@ export function QsoForm({
     e.preventDefault();
     await onSubmit();
   };
+
+  const bands = withCurrent(BANDS, value.band);
+  const modes = withCurrent(MODES, value.mode);
 
   return (
     <form onSubmit={handle} className="grid gap-4">
@@ -45,17 +99,25 @@ export function QsoForm({
           <Input
             type="datetime-local"
             required
-            value={value.qsodate?.slice(0, 16) ?? ""}
-            onChange={(e) => set("qsodate", e.target.value.length === 16 ? `${e.target.value}:00` : e.target.value)}
+            step={1}
+            value={dateInputValue(value.qsodate)}
+            onChange={(e) => {
+              const v = e.target.value;
+              set("qsodate", v.length === 16 ? `${v}:00` : v);
+            }}
           />
         </Field>
         <Field label={tr("band")}>
           <select
             className="w-full rounded-md border border-[var(--line)] bg-[var(--night-mid)] px-3 py-2"
             value={value.band}
-            onChange={(e) => set("band", e.target.value)}
+            onChange={(e) => {
+              const band = e.target.value;
+              const freq = freqKhzForBand(band) || value.freq;
+              onChange({ ...value, band, freq });
+            }}
           >
-            {BANDS.map((b) => (
+            {bands.map((b) => (
               <option key={b} value={b}>
                 {b}
               </option>
@@ -68,19 +130,30 @@ export function QsoForm({
             value={value.mode}
             onChange={(e) => set("mode", e.target.value)}
           >
-            {MODES.map((m) => (
+            {modes.map((m) => (
               <option key={m} value={m}>
                 {m}
               </option>
             ))}
           </select>
         </Field>
-        <Field label="Freq TX">
+        <Field label={tr("freq")}>
           <Input
             type="number"
+            inputMode="decimal"
             step="0.001"
-            value={value.freq || ""}
-            onChange={(e) => set("freq", Number(e.target.value) || 0)}
+            min="0"
+            value={freqMhz}
+            onChange={(e) => {
+              const text = e.target.value;
+              setFreqMhz(text);
+              if (text === "" || text === "." || text === "-" || text.endsWith(".")) {
+                if (text === "") set("freq", 0);
+                return;
+              }
+              const mhz = Number(text);
+              if (!Number.isNaN(mhz)) set("freq", Math.round(mhz * 1000));
+            }}
           />
         </Field>
         <Field label={`${tr("rst")} S/R`}>
