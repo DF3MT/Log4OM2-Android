@@ -67,8 +67,8 @@ class AuthTokenStore(context: Context) {
     }
 
     companion object {
-        /** Emulator → host machine. On a real phone set your LAN API URL in Login. */
-        const val DEFAULT_API_URL = "http://10.0.2.2:8080"
+        /** LAN API on LXC 113. Override on the login screen if needed. */
+        const val DEFAULT_API_URL = "http://192.168.96.191:8080"
         private const val KEY_API_URL = "api_base_url"
         private const val KEY_ACCESS = "access_token"
         private const val KEY_REFRESH = "refresh_token"

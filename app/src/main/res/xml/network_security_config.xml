@@ -7,9 +7,9 @@
         </trust-anchors>
     </base-config>
     <domain-config cleartextTrafficPermitted="true">
-        <!-- Private IP ranges for local MySQL server -->
-        <domain includeSubdomains="false">192.168.0.0</domain>
-        <domain includeSubdomains="false">10.0.0.0</domain>
-        <domain includeSubdomains="false">172.16.0.0</domain>
+        <!-- Exact hosts. Android matches these literally, not as subnets. -->
+        <domain includeSubdomains="false">192.168.96.191</domain>
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
     </domain-config>
 </network-security-config>
