@@ -6,6 +6,9 @@
 # Optional: REGISTRY_USER, REGISTRY_PASSWORD (otherwise the job token is used)
 set -euo pipefail
 
+if [ -z "${CI_REGISTRY:-}" ]; then CI_REGISTRY=git.lets-host.de; fi
+if [ -z "${CI_REGISTRY_IMAGE:-}" ]; then CI_REGISTRY_IMAGE="${CI_REGISTRY}/df3mt/log4om2-android"; fi
+
 target="${1:-}"
 case "$target" in
   api)

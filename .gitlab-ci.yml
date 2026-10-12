@@ -46,6 +46,10 @@ variables:
   API_STACK_DIR: "/srv/log4om-api.df3mt.de"
   WEB_STACK_DIR: "/srv/log4om-web.df3mt.de"
   FF_USE_FASTZIP: "true"
+  # This GitLab does not export CI_REGISTRY / CI_REGISTRY_IMAGE. The registry
+  # answers on https://git.lets-host.de/v2/ (not port 5050).
+  CI_REGISTRY: "git.lets-host.de"
+  CI_REGISTRY_IMAGE: "git.lets-host.de/df3mt/log4om2-android"
 
 .api_rules:
   rules:
@@ -169,12 +173,14 @@ api:image:
   interruptible: true
   timeout: 45m
   script:
-    - mkdir -p /kaniko/.docker
     - |
+      if [ -z "${CI_REGISTRY}" ]; then CI_REGISTRY=git.lets-host.de; fi
+      if [ -z "${CI_REGISTRY_IMAGE}" ]; then CI_REGISTRY_IMAGE="${CI_REGISTRY}/df3mt/log4om2-android"; fi
+      echo "Pushing ${CI_REGISTRY_IMAGE}/api"
+      mkdir -p /kaniko/.docker
       AUTH=$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')
       printf '{"auths":{"%s":{"auth":"%s"}}}\n' "${CI_REGISTRY}" "${AUTH}" > /kaniko/.docker/config.json
       unset AUTH
-    - |
       /kaniko/executor \
         --context "${CI_PROJECT_DIR}/api" \
         --dockerfile "${CI_PROJECT_DIR}/api/Dockerfile" \
@@ -192,12 +198,14 @@ web:image:
   interruptible: true
   timeout: 45m
   script:
-    - mkdir -p /kaniko/.docker
     - |
+      if [ -z "${CI_REGISTRY}" ]; then CI_REGISTRY=git.lets-host.de; fi
+      if [ -z "${CI_REGISTRY_IMAGE}" ]; then CI_REGISTRY_IMAGE="${CI_REGISTRY}/df3mt/log4om2-android"; fi
+      echo "Pushing ${CI_REGISTRY_IMAGE}/web"
+      mkdir -p /kaniko/.docker
       AUTH=$(printf "%s:%s" "${CI_REGISTRY_USER}" "${CI_REGISTRY_PASSWORD}" | base64 | tr -d '\n')
       printf '{"auths":{"%s":{"auth":"%s"}}}\n' "${CI_REGISTRY}" "${AUTH}" > /kaniko/.docker/config.json
       unset AUTH
-    - |
       /kaniko/executor \
         --context "${CI_PROJECT_DIR}/web" \
         --dockerfile "${CI_PROJECT_DIR}/web/Dockerfile" \
