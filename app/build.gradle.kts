@@ -110,6 +110,8 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     testImplementation(libs.junit)
+    // Unit tests run on the JVM; android.jar only stubs org.json.
+    testImplementation("org.json:json:20250107")
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     debugImplementation(libs.androidx.ui.tooling)

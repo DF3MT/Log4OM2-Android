@@ -6,7 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.log4om.android.R
 import com.log4om.android.data.model.AppUpdateInfo
-import com.log4om.android.data.network.GitHubUpdateService
+import com.log4om.android.data.network.GitLabUpdateService
 import com.log4om.android.ui.util.UiText
 import com.log4om.android.util.ApkInstaller
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -29,7 +29,7 @@ data class UpdateUiState(
 
 class UpdateViewModel(
     application: Application,
-    private val updateService: GitHubUpdateService = GitHubUpdateService()
+    private val updateService: GitLabUpdateService = GitLabUpdateService()
 ) : AndroidViewModel(application) {
 
     private val _state = MutableStateFlow(UpdateUiState())
