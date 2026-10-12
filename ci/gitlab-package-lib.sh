@@ -110,12 +110,14 @@ publish_android_package() {
     --arg name "Log4OM Android ${NAME}" \
     --arg tag "$TAG" \
     --arg desc "Automated release from main (pipeline ${CI_PIPELINE_ID}). Version ${NAME} (${CODE}), commit ${CI_COMMIT_SHA}." \
+    --arg ref "$CI_COMMIT_SHA" \
     --arg latest "${VERSIONED_BASE}/Log4OM-Android-latest.apk" \
     --arg versioned "${VERSIONED_BASE}/${APK_NAME}" \
     --arg apk "$APK_NAME" \
     '{
       name: $name,
       tag_name: $tag,
+      ref: $ref,
       description: $desc,
       assets: { links: [
         {name: "Log4OM-Android-latest.apk", url: $latest, link_type: "package"},
