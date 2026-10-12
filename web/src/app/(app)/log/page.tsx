@@ -247,6 +247,27 @@ export default function LogPage() {
     URL.revokeObjectURL(url);
   };
 
+  const onExportAll = async () => {
+    setError("");
+    try {
+      const books = await api.listLogbooks();
+      const active = books.find((b) => b.active) || books[0];
+      if (!active) {
+        setError(tr("needDb"));
+        return;
+      }
+      const { blob, filename } = await api.exportLogbookAdif(active.id);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed");
+    }
+  };
+
   const onImport = async (file: File | null) => {
     if (!file) return;
     setError("");
@@ -284,6 +305,9 @@ export default function LogPage() {
                 onClick={() => void onExport()}
               >
                 {tr("exportAdif")} ({selected.size} {tr("selected")})
+              </Button>
+              <Button variant="ghost" onClick={() => void onExportAll()}>
+                {tr("exportAll")}
               </Button>
               <Link
                 href="/qso/new"
@@ -324,6 +348,72 @@ export default function LogPage() {
                 value={filter.country ?? ""}
                 onChange={(e) =>
                   setFilter((f) => ({ ...f, country: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("dateFrom")}>
+              <Input
+                type="date"
+                value={filter.dateFrom ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, dateFrom: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("dateTo")}>
+              <Input
+                type="date"
+                value={filter.dateTo ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, dateTo: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("dxcc")}>
+              <Input
+                value={filter.dxcc ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, dxcc: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("sota")}>
+              <Input
+                value={filter.sotaRef ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, sotaRef: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("iota")}>
+              <Input
+                value={filter.iota ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, iota: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("pota")}>
+              <Input
+                value={filter.potaRef ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, potaRef: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("wwff")}>
+              <Input
+                value={filter.wwffRef ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, wwffRef: e.target.value }))
+                }
+              />
+            </Field>
+            <Field label={tr("cota")}>
+              <Input
+                value={filter.cotaRef ?? ""}
+                onChange={(e) =>
+                  setFilter((f) => ({ ...f, cotaRef: e.target.value }))
                 }
               />
             </Field>

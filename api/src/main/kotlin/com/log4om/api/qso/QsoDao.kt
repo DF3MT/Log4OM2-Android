@@ -24,6 +24,19 @@ class QsoDao {
         }
     }
 
+    fun listAll(conn: Connection): List<QsoDto> {
+        val out = ArrayList<QsoDto>()
+        var offset = 0
+        while (true) {
+            val chunk = queryFiltered(conn, LogFilterDto(), 500, offset)
+            if (chunk.isEmpty()) break
+            out += chunk
+            offset += chunk.size
+            if (chunk.size < 500) break
+        }
+        return out
+    }
+
     fun countFiltered(conn: Connection, filter: LogFilterDto): Int {
         val built = LogFilterSql.build(filter)
         val sql = "SELECT COUNT(*) FROM log ${built.whereSql}"

@@ -21,6 +21,7 @@ import com.log4om.android.R
 import com.log4om.android.ui.components.DropdownField
 import com.log4om.android.ui.components.LabeledTextField
 import com.log4om.android.ui.components.SectionHeader
+import com.log4om.android.ui.viewmodel.LogbookViewModel
 import com.log4om.android.ui.viewmodel.SettingsViewModel
 import com.log4om.android.ui.viewmodel.UpdateViewModel
 import com.log4om.android.util.AmateurRadio
@@ -29,6 +30,7 @@ import com.log4om.android.util.AmateurRadio
 @Composable
 fun SettingsScreen(
     viewModel: SettingsViewModel,
+    logbookViewModel: LogbookViewModel,
     updateViewModel: UpdateViewModel,
     onLogout: () -> Unit = {}
 ) {
@@ -59,6 +61,15 @@ fun SettingsScreen(
         importText?.let {
             snackbarHostState.showSnackbar(it)
             viewModel.clearImportMessage()
+        }
+    }
+
+    val logbookState by logbookViewModel.state.collectAsState()
+    val logbookText = logbookState.message?.asString()
+    LaunchedEffect(logbookText) {
+        logbookText?.let {
+            snackbarHostState.showSnackbar(it)
+            logbookViewModel.clearMessage()
         }
     }
 
@@ -99,6 +110,8 @@ fun SettingsScreen(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Spacer(Modifier.height(4.dp))
+
+            LogbooksSection(logbookViewModel)
 
             SectionHeader(stringResource(R.string.section_my_station))
             LabeledTextField(
@@ -236,6 +249,23 @@ fun SettingsScreen(
                 value = state.clublogApiKey,
                 onValueChange = viewModel::updateClublogApiKey
             )
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(
+                    onClick = { viewModel.testLookup("qrz") },
+                    enabled = !state.isTestingLookup,
+                    modifier = Modifier.weight(1f)
+                ) { Text(stringResource(R.string.test_lookup, "QRZ")) }
+                OutlinedButton(
+                    onClick = { viewModel.testLookup("hamqth") },
+                    enabled = !state.isTestingLookup,
+                    modifier = Modifier.weight(1f)
+                ) { Text(stringResource(R.string.test_lookup, "HamQTH")) }
+            }
+            OutlinedButton(
+                onClick = { viewModel.testLookup("clublog") },
+                enabled = !state.isTestingLookup,
+                modifier = Modifier.fillMaxWidth()
+            ) { Text(stringResource(R.string.test_lookup, "Club Log")) }
 
             SectionHeader(stringResource(R.string.section_activity_gps))
             Text(

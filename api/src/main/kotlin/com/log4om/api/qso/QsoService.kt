@@ -3,6 +3,7 @@ package com.log4om.api.qso
 import com.log4om.api.common.NotFoundException
 import com.log4om.api.security.UserPrincipal
 import com.log4om.api.tenant.TenantDbService
+import java.util.UUID
 import org.springframework.stereotype.Service
 
 @Service
@@ -59,4 +60,13 @@ class QsoService(
 
     fun bulkInsert(principal: UserPrincipal, qsos: List<QsoDto>) =
         tenantDb.withTenantConnection(principal.tenantId) { dao.bulkInsert(it, qsos) }
+
+    fun listAll(principal: UserPrincipal) =
+        tenantDb.withTenantConnection(principal.tenantId) { dao.listAll(it) }
+
+    fun listAll(logbookId: UUID) =
+        tenantDb.withLogbookConnection(logbookId) { dao.listAll(it) }
+
+    fun bulkInsertInto(logbookId: UUID, rows: List<QsoDto>) =
+        tenantDb.withLogbookConnection(logbookId) { dao.bulkInsert(it, rows) }
 }

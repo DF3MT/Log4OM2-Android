@@ -52,6 +52,8 @@ data class QsoDto(
     val potaRef: String = "",
     val wwffRef: String = "",
     val cotaRef: String = "",
+    /** False when ADIF TIME_ON had no seconds (HHMM). Not a MySQL column. */
+    val matchSecondsExact: Boolean = true,
     val programid: String = "Log4OM API",
     val programversion: String = "0.1.0"
 )

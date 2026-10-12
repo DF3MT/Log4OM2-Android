@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.log4om.android.R
 import com.log4om.android.data.model.LogFilter
+import com.log4om.android.data.model.LogbookConfig
 import com.log4om.android.data.model.Qso
 import com.log4om.android.data.repository.LogRepository
 import com.log4om.android.ui.util.UiText
@@ -49,10 +50,36 @@ class LogViewModel(private val repository: LogRepository) : ViewModel() {
     private val _isExporting = MutableStateFlow(false)
     val isExporting: StateFlow<Boolean> = _isExporting.asStateFlow()
 
+    private val _logbooks = MutableStateFlow<List<LogbookConfig>>(emptyList())
+    val logbooks: StateFlow<List<LogbookConfig>> = _logbooks.asStateFlow()
+
     private val _deleteMessage = MutableStateFlow<UiText?>(null)
     val deleteMessage: StateFlow<UiText?> = _deleteMessage.asStateFlow()
 
-    init { loadInitial() }
+    init {
+        loadInitial()
+        refreshLogbooks()
+    }
+
+    fun refreshLogbooks() {
+        viewModelScope.launch {
+            repository.listLogbooks().onSuccess { _logbooks.value = it }
+        }
+    }
+
+    fun activateLogbook(id: String) {
+        viewModelScope.launch {
+            repository.activateLogbook(id).fold(
+                onSuccess = {
+                    refreshLogbooks()
+                    loadInitial()
+                },
+                onFailure = { e ->
+                    _message.value = UiText.Raw(e.message ?: "Logbook")
+                }
+            )
+        }
+    }
 
     fun applyFilter(filter: LogFilter) {
         _filter.value = filter
@@ -173,6 +200,27 @@ class LogViewModel(private val repository: LogRepository) : ViewModel() {
                         R.string.export_failed,
                         e.localizedMessage.orEmpty()
                     )
+                }
+            )
+        }
+    }
+
+    fun prepareExportAll() {
+        val active = _logbooks.value.find { it.active } ?: _logbooks.value.firstOrNull()
+        if (active == null) {
+            _message.value = UiText.Resource(R.string.export_failed, "no logbook")
+            return
+        }
+        viewModelScope.launch {
+            _isExporting.value = true
+            repository.exportLogbook(active.id).fold(
+                onSuccess = { adif ->
+                    _isExporting.value = false
+                    _exportAdif.value = adif
+                },
+                onFailure = { e ->
+                    _isExporting.value = false
+                    _message.value = UiText.Resource(R.string.export_failed, e.message.orEmpty())
                 }
             )
         }

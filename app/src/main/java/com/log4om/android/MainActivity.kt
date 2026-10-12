@@ -81,6 +81,7 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
     val logViewModel: LogViewModel = viewModel(factory = factory)
     val newQsoViewModel: NewQsoViewModel = viewModel(factory = factory)
     val settingsViewModel: SettingsViewModel = viewModel(factory = factory)
+    val logbookViewModel: LogbookViewModel = viewModel(factory = factory)
     val updateViewModel: UpdateViewModel = viewModel(factory = factory)
 
     val navBackStack by navController.currentBackStackEntryAsState()
@@ -183,6 +184,7 @@ private fun Log4OMNavHost(factory: AppViewModelFactory) {
             composable(Screen.Settings.route) {
                 SettingsScreen(
                     viewModel = settingsViewModel,
+                    logbookViewModel = logbookViewModel,
                     updateViewModel = updateViewModel,
                     onLogout = authViewModel::logout
                 )

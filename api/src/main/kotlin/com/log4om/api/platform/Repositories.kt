@@ -14,6 +14,10 @@ interface TenantRepository : JpaRepository<TenantEntity, UUID> {
 
 interface TenantDbConfigRepository : JpaRepository<TenantDbConfigEntity, UUID>
 
+interface LogbookRepository : JpaRepository<LogbookEntity, UUID> {
+    fun findByTenantId(tenantId: UUID): List<LogbookEntity>
+}
+
 interface StationProfileRepository : JpaRepository<StationProfileEntity, UUID>
 
 interface LookupCredentialsRepository : JpaRepository<LookupCredentialsEntity, UUID>

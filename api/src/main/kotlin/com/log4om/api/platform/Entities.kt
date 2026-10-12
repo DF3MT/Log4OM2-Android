@@ -30,7 +30,46 @@ class TenantEntity(
     @Column(name = "display_name", nullable = false)
     var displayName: String = "",
     @Column(name = "created_at", nullable = false)
-    val createdAt: Instant = Instant.now()
+    val createdAt: Instant = Instant.now(),
+    @Column(name = "active_logbook_id")
+    var activeLogbookId: UUID? = null
+)
+
+@Entity
+@Table(name = "logbooks")
+class LogbookEntity(
+    @Id
+    val id: UUID = UUID.randomUUID(),
+    @Column(name = "tenant_id", nullable = false)
+    val tenantId: UUID = UUID.randomUUID(),
+    @Column(name = "display_name", nullable = false)
+    var displayName: String = "",
+    @Column(name = "station_callsign", nullable = false)
+    var stationCallsign: String = "",
+    @Column(nullable = false)
+    var host: String = "",
+    @Column(nullable = false)
+    var port: Int = 3306,
+    @Column(name = "database_name", nullable = false)
+    var databaseName: String = "",
+    @Column(nullable = false)
+    var username: String = "",
+    @Column(name = "encrypted_password", nullable = false)
+    var encryptedPassword: String = "",
+    @Column(name = "ssl_enabled", nullable = false)
+    var sslEnabled: Boolean = true,
+    @Column(name = "last_test_ok_at")
+    var lastTestOkAt: Instant? = null,
+    @Column(name = "encrypted_qrz_logbook_key", nullable = false)
+    var encryptedQrzLogbookKey: String = "",
+    @Column(name = "eqsl_user", nullable = false)
+    var eqslUser: String = "",
+    @Column(name = "encrypted_eqsl_password", nullable = false)
+    var encryptedEqslPassword: String = "",
+    @Column(name = "created_at", nullable = false)
+    val createdAt: Instant = Instant.now(),
+    @Column(name = "updated_at", nullable = false)
+    var updatedAt: Instant = Instant.now()
 )
 
 @Entity

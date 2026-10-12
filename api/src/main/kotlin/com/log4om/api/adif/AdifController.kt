@@ -22,16 +22,24 @@ data class ExportRequest(val ids: List<Long>)
 class AdifController(
     private val qsoService: QsoService
 ) {
+    @PostMapping("/export-full")
+    fun exportFull(
+        @AuthenticationPrincipal principal: UserPrincipal
+    ): ResponseEntity<ByteArray> = adifResponse(qsoService.listAll(principal), "logbook.adi")
+
     @PostMapping("/export")
     fun export(
         @AuthenticationPrincipal principal: UserPrincipal,
         @RequestBody body: ExportRequest
     ): ResponseEntity<ByteArray> {
-        val qsos = qsoService.byIds(principal, body.ids)
+        return adifResponse(qsoService.byIds(principal, body.ids), "export.adi")
+    }
+
+    private fun adifResponse(qsos: List<QsoDto>, filename: String): ResponseEntity<ByteArray> {
         val adif = AdifWriter.toAdif(qsos)
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"export.adi\"")
-            .contentType(MediaType.parseMediaType("text/plain"))
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .contentType(MediaType.parseMediaType("text/plain; charset=UTF-8"))
             .body(adif.toByteArray(Charsets.UTF_8))
     }
 
@@ -60,32 +68,38 @@ object AdifWriter {
         appendLine("<ADIF_VER:5>3.1.4")
         appendLine("<PROGRAMID:10>Log4OM API")
         appendLine("<EOH>")
-        qsos.forEach { q ->
-            fun field(name: String, value: String?) {
-                if (value.isNullOrBlank()) return
-                append("<$name:${value.length}>$value")
-            }
-            field("CALL", q.callsign)
-            field("BAND", q.band)
-            field("MODE", q.mode)
-            field("QSO_DATE", q.qsodate.format(dateFmt))
-            field("TIME_ON", q.qsodate.format(timeFmt))
-            if (q.freq > 0) field("FREQ", (q.freq / 1000.0).toString())
-            field("RST_SENT", q.rstsent)
-            field("RST_RCVD", q.rstrcvd)
-            field("NAME", q.name)
-            field("QTH", q.qth)
-            field("COUNTRY", q.country)
-            if (q.dxcc > 0) field("DXCC", q.dxcc.toString())
-            field("GRIDSQUARE", q.gridsquare)
-            field("COMMENT", q.comment)
-            field("SOTA_REF", q.sotaRef)
-            field("IOTA", q.iota)
-            field("POTA_REF", q.potaRef)
-            field("WWFF_REF", q.wwffRef)
-            field("COTA_REF", q.cotaRef)
-            appendLine("<EOR>")
+        qsos.forEach { appendRecord(this, it) }
+    }
+
+    /** One ADIF record, no header. QRZ INSERT accepts a single record. */
+    fun record(qso: QsoDto): String = buildString { appendRecord(this, qso) }
+
+    private fun appendRecord(out: StringBuilder, q: QsoDto) {
+        fun field(name: String, value: String?) {
+            if (value.isNullOrBlank()) return
+            out.append("<$name:${value.length}>$value")
         }
+        field("CALL", q.callsign)
+        field("BAND", q.band)
+        field("MODE", q.mode)
+        field("QSO_DATE", q.qsodate.format(dateFmt))
+        field("TIME_ON", q.qsodate.format(timeFmt))
+        field("STATION_CALLSIGN", q.stationcallsign)
+        if (q.freq > 0) field("FREQ", (q.freq / 1000.0).toString())
+        field("RST_SENT", q.rstsent)
+        field("RST_RCVD", q.rstrcvd)
+        field("NAME", q.name)
+        field("QTH", q.qth)
+        field("COUNTRY", q.country)
+        if (q.dxcc > 0) field("DXCC", q.dxcc.toString())
+        field("GRIDSQUARE", q.gridsquare)
+        field("COMMENT", q.comment)
+        field("SOTA_REF", q.sotaRef)
+        field("IOTA", q.iota)
+        field("POTA_REF", q.potaRef)
+        field("WWFF_REF", q.wwffRef)
+        field("COTA_REF", q.cotaRef)
+        out.appendLine("<EOR>")
     }
 }
 
@@ -105,7 +119,10 @@ object AdifParser {
             }
             if (map["CALL"].isNullOrBlank()) return@mapNotNull null
             val date = map["QSO_DATE"].orEmpty()
-            val time = map["TIME_ON"].orEmpty().padEnd(6, '0')
+            val timeRaw = map["TIME_ON"].orEmpty().trim()
+            val timeDigits = timeRaw.filter { it.isDigit() }
+            val time = timeDigits.padEnd(6, '0').take(6)
+            val secondsExact = timeDigits.length >= 6
             val dt = runCatching {
                 java.time.LocalDateTime.of(
                     date.substring(0, 4).toInt(),
@@ -136,7 +153,8 @@ object AdifParser {
                 iota = map["IOTA"].orEmpty(),
                 potaRef = map["POTA_REF"].orEmpty(),
                 wwffRef = map["WWFF_REF"].orEmpty(),
-                cotaRef = map["COTA_REF"].orEmpty()
+                cotaRef = map["COTA_REF"].orEmpty(),
+                matchSecondsExact = secondsExact
             )
         }
     }

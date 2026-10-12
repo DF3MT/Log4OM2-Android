@@ -31,6 +31,46 @@ export type DbConfig = {
   lastTestOkAt: string | null;
 };
 
+export type Logbook = {
+  id: string;
+  displayName: string;
+  stationCallsign: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  sslEnabled: boolean;
+  passwordSet: boolean;
+  qrzLogbookKeySet: boolean;
+  eqslUser: string;
+  eqslPasswordSet: boolean;
+  active: boolean;
+  lastTestOkAt: string | null;
+};
+
+export type LogbookWrite = {
+  displayName: string;
+  stationCallsign: string;
+  host: string;
+  port: number;
+  database: string;
+  username: string;
+  password?: string | null;
+  sslEnabled: boolean;
+  qrzLogbookKey?: string | null;
+  eqslUser?: string | null;
+  eqslPassword?: string | null;
+};
+
+export type SyncResult = {
+  ok: boolean;
+  uploaded: number;
+  downloaded: number;
+  skipped: number;
+  code: string;
+  message: string;
+};
+
 export type DbConfigRequest = {
   host: string;
   port: number;

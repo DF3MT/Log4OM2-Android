@@ -51,6 +51,7 @@ data class SettingsState(
     val isSyncingRefs: Boolean = false,
     val refsSyncProgress: String = "",
     val isTestingDb: Boolean = false,
+    val isTestingLookup: Boolean = false,
     val dbTestResult: UiText? = null,
     val dbTestSuccess: Boolean = false,
     val isSaving: Boolean = false,
@@ -102,6 +103,36 @@ class SettingsViewModel(
                 refsSyncNote = prefs.refsLastSyncNote.first()
             )
             refreshCatalogStats()
+            loadRemoteAccount()
+        }
+    }
+
+    private fun loadRemoteAccount() {
+        viewModelScope.launch {
+            repository.getStationJson().onSuccess { o ->
+                _state.update {
+                    it.copy(
+                        myCallsign = o.optString("callsign", it.myCallsign),
+                        myGridsquare = o.optString("gridsquare", it.myGridsquare),
+                        myName = o.optString("name", it.myName),
+                        myRig = o.optString("rig", it.myRig),
+                        myDxcc = o.optString("dxcc", it.myDxcc),
+                        defaultRstSent = o.optString("defaultRstSent", it.defaultRstSent),
+                        defaultRstRcvd = o.optString("defaultRstRcvd", it.defaultRstRcvd),
+                        defaultBand = o.optString("defaultBand", it.defaultBand),
+                        defaultMode = o.optString("defaultMode", it.defaultMode),
+                        defaultTxpwr = o.optString("defaultTxpwr", it.defaultTxpwr)
+                    )
+                }
+            }
+            repository.getLookupJson().onSuccess { o ->
+                _state.update {
+                    it.copy(
+                        qrzUser = o.optString("qrzUser", it.qrzUser),
+                        hamqthUser = o.optString("hamqthUser", it.hamqthUser)
+                    )
+                }
+            }
         }
     }
 
@@ -234,6 +265,27 @@ class SettingsViewModel(
         viewModelScope.launch {
             _state.update { it.copy(isSaving = true) }
             authStore.apiBaseUrl = s.apiUrl
+            runCatching {
+                val station = org.json.JSONObject()
+                    .put("callsign", s.myCallsign)
+                    .put("gridsquare", s.myGridsquare)
+                    .put("name", s.myName)
+                    .put("rig", s.myRig)
+                    .put("dxcc", s.myDxcc)
+                    .put("defaultRstSent", s.defaultRstSent)
+                    .put("defaultRstRcvd", s.defaultRstRcvd)
+                    .put("defaultBand", s.defaultBand)
+                    .put("defaultMode", s.defaultMode)
+                    .put("defaultTxpwr", s.defaultTxpwr)
+                repository.putStationJson(station).getOrThrow()
+                val lookup = org.json.JSONObject()
+                    .put("qrzUser", s.qrzUser)
+                    .put("hamqthUser", s.hamqthUser)
+                if (s.qrzPassword.isNotBlank()) lookup.put("qrzPassword", s.qrzPassword)
+                if (s.hamqthPassword.isNotBlank()) lookup.put("hamqthPassword", s.hamqthPassword)
+                if (s.clublogApiKey.isNotBlank()) lookup.put("clublogApiKey", s.clublogApiKey)
+                repository.putLookupJson(lookup).getOrThrow()
+            }
             prefs.update {
                 it[AppPrefs.QRZ_USER] = s.qrzUser
                 it[AppPrefs.QRZ_PASSWORD] = s.qrzPassword
@@ -257,6 +309,51 @@ class SettingsViewModel(
                 it[AppPrefs.RADIUS_IOTA_M] = s.radiusIotaM.toIntOrNull()?.coerceAtLeast(1) ?: 5000
             }
             _state.update { it.copy(isSaving = false, saveSuccess = true) }
+        }
+    }
+
+    fun testLookup(provider: String) {
+        val s = _state.value
+        viewModelScope.launch {
+            _state.update { it.copy(isTestingLookup = true) }
+            val body = org.json.JSONObject().put("provider", provider)
+            when (provider) {
+                "qrz" -> {
+                    body.put("qrzUser", s.qrzUser)
+                    if (s.qrzPassword.isNotBlank()) body.put("qrzPassword", s.qrzPassword)
+                }
+                "hamqth" -> {
+                    body.put("hamqthUser", s.hamqthUser)
+                    if (s.hamqthPassword.isNotBlank()) body.put("hamqthPassword", s.hamqthPassword)
+                }
+                else -> if (s.clublogApiKey.isNotBlank()) body.put("clublogApiKey", s.clublogApiKey)
+            }
+            repository.testLookup(body).fold(
+                onSuccess = { probe ->
+                    _state.update {
+                        it.copy(
+                            isTestingLookup = false,
+                            importMessage = if (probe.ok) {
+                                UiText.Resource(R.string.lookup_test_ok, provider, probe.message)
+                            } else {
+                                UiText.Resource(R.string.lookup_test_failed, provider, probe.message)
+                            }
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    _state.update {
+                        it.copy(
+                            isTestingLookup = false,
+                            importMessage = UiText.Resource(
+                                R.string.lookup_test_failed,
+                                provider,
+                                e.message.orEmpty()
+                            )
+                        )
+                    }
+                }
+            )
         }
     }
 

@@ -2,7 +2,10 @@ import { clearSession, loadSession, saveSession } from "@/lib/auth-storage";
 import type {
   DbConfig,
   DbConfigRequest,
+  Logbook,
+  LogbookWrite,
   LogFilter,
+  SyncResult,
   LookupCredentials,
   LookupTestRequest,
   LookupTestResult,
@@ -233,5 +236,36 @@ export const api = {
       "/adif/import",
       { method: "POST", formData: fd },
     );
+  },
+  listLogbooks() {
+    return apiFetch<Logbook[]>("/me/logbooks");
+  },
+  createLogbook(body: LogbookWrite) {
+    return apiFetch<Logbook>("/me/logbooks", { method: "POST", body });
+  },
+  updateLogbook(id: string, body: LogbookWrite) {
+    return apiFetch<Logbook>(`/me/logbooks/${id}`, { method: "PUT", body });
+  },
+  deleteLogbook(id: string) {
+    return apiFetch<void>(`/me/logbooks/${id}`, { method: "DELETE" });
+  },
+  activateLogbook(id: string) {
+    return apiFetch<Logbook>(`/me/logbooks/${id}/activate`, { method: "POST" });
+  },
+  testLogbook(id: string | null, body: LogbookWrite) {
+    const path = id ? `/me/logbooks/${id}/test` : "/me/logbooks/connection-test";
+    return apiFetch<{ ok: boolean; message: string }>(path, { method: "POST", body });
+  },
+  async exportLogbookAdif(id: string) {
+    const res = await apiFetch<Response>(`/me/logbooks/${id}/adif`, { raw: true });
+    const disposition = res.headers.get("Content-Disposition") || "";
+    const match = /filename="([^"]+)"/.exec(disposition);
+    return { blob: await res.blob(), filename: match?.[1] || "logbook.adi" };
+  },
+  syncQrz(id: string) {
+    return apiFetch<SyncResult>(`/me/logbooks/${id}/sync/qrz`, { method: "POST" });
+  },
+  syncEqsl(id: string) {
+    return apiFetch<SyncResult>(`/me/logbooks/${id}/sync/eqsl`, { method: "POST" });
   },
 };

@@ -11,7 +11,7 @@ export default function SettingsLayout({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const tabs = [
     { href: "/settings/station", label: tr("station") },
-    { href: "/settings/database", label: tr("database") },
+    { href: "/settings/database", label: tr("logbooks") },
     { href: "/settings/lookup", label: tr("lookup") },
   ];
 

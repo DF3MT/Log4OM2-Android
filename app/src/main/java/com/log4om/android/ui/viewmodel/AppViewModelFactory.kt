@@ -16,6 +16,8 @@ class AppViewModelFactory(private val app: Log4OMApp) : ViewModelProvider.Factor
                 app.locationHelper,
                 app.activityProximityService
             ) as T
+        modelClass.isAssignableFrom(LogbookViewModel::class.java) ->
+            LogbookViewModel(app.repository) as T
         modelClass.isAssignableFrom(SettingsViewModel::class.java) ->
             SettingsViewModel(
                 app.prefs,

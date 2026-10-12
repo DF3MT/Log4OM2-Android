@@ -3,8 +3,9 @@ package com.log4om.api.tenant
 import com.log4om.api.common.BadRequestException
 import com.log4om.api.common.NotFoundException
 import com.log4om.api.config.Log4omProperties
-import com.log4om.api.platform.TenantDbConfigEntity
-import com.log4om.api.platform.TenantDbConfigRepository
+import com.log4om.api.platform.LogbookEntity
+import com.log4om.api.platform.LogbookRepository
+import com.log4om.api.platform.TenantRepository
 import com.log4om.api.security.SecretBox
 import com.log4om.api.security.UserPrincipal
 import com.zaxxer.hikari.HikariConfig
@@ -16,6 +17,7 @@ import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import javax.sql.DataSource
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 data class DbConfigRequest(
     val host: String,
@@ -40,54 +42,67 @@ data class DbTestResponse(val ok: Boolean, val message: String)
 
 @Service
 class TenantDbService(
-    private val configs: TenantDbConfigRepository,
+    private val logbooks: LogbookRepository,
+    private val tenants: TenantRepository,
     private val secretBox: SecretBox,
     private val props: Log4omProperties
 ) {
     private val pools = ConcurrentHashMap<UUID, HikariDataSource>()
 
-    fun getConfig(principal: UserPrincipal): DbConfigResponse {
-        val cfg = configs.findById(principal.tenantId).orElse(null)
-            ?: throw NotFoundException("Database not configured")
-        return cfg.toResponse()
-    }
+    fun getConfig(principal: UserPrincipal): DbConfigResponse =
+        requireActive(principal.tenantId).toDbResponse()
 
+    @Transactional
     fun upsertConfig(principal: UserPrincipal, req: DbConfigRequest): DbConfigResponse {
         if (req.host.isBlank() || req.database.isBlank() || req.username.isBlank()) {
             throw BadRequestException("host, database and username are required")
         }
-        val existing = configs.findById(principal.tenantId).orElse(null)
+        val existing = activeOrNull(principal.tenantId)
         val password = when {
             !req.password.isNullOrBlank() -> secretBox.encrypt(req.password)
             existing != null -> existing.encryptedPassword
             else -> throw BadRequestException("password is required on first save")
         }
-        val entity = existing?.apply {
-            host = req.host.trim()
-            port = req.port
-            databaseName = req.database.trim()
-            username = req.username.trim()
-            encryptedPassword = password
-            sslEnabled = req.sslEnabled
-            updatedAt = Instant.now()
-        } ?: TenantDbConfigEntity(
-            tenantId = principal.tenantId,
-            host = req.host.trim(),
-            port = req.port,
-            databaseName = req.database.trim(),
-            username = req.username.trim(),
-            encryptedPassword = password,
-            sslEnabled = req.sslEnabled
-        )
-        configs.save(entity)
-        evictPool(principal.tenantId)
-        return entity.toResponse()
+        val entity = if (existing != null) {
+            existing.apply {
+                host = req.host.trim()
+                port = req.port
+                databaseName = req.database.trim()
+                username = req.username.trim()
+                encryptedPassword = password
+                sslEnabled = req.sslEnabled
+                updatedAt = Instant.now()
+            }
+        } else {
+            val tenant = tenants.findById(principal.tenantId).orElseThrow {
+                NotFoundException("Tenant missing")
+            }
+            LogbookEntity(
+                tenantId = principal.tenantId,
+                displayName = tenant.displayName.ifBlank { req.database.trim() },
+                stationCallsign = "",
+                host = req.host.trim(),
+                port = req.port,
+                databaseName = req.database.trim(),
+                username = req.username.trim(),
+                encryptedPassword = password,
+                sslEnabled = req.sslEnabled
+            )
+        }
+        val saved = logbooks.save(entity)
+        if (existing == null) {
+            val tenant = tenants.findById(principal.tenantId).orElseThrow()
+            tenant.activeLogbookId = saved.id
+            tenants.save(tenant)
+        }
+        evictPool(saved.id)
+        return saved.toDbResponse()
     }
 
     fun testConnection(principal: UserPrincipal, req: DbConfigRequest? = null): DbTestResponse {
-        val existing = configs.findById(principal.tenantId).orElse(null)
+        val existing = activeOrNull(principal.tenantId)
         val probe = if (req != null && req.host.isNotBlank()) {
-            probeFromRequest(existing, req)
+            probeFrom(existing, req)
         } else {
             val cfg = existing ?: throw NotFoundException("Database not configured")
             DbProbe(
@@ -97,9 +112,54 @@ class TenantDbService(
                 username = cfg.username,
                 password = secretBox.decrypt(cfg.encryptedPassword),
                 sslEnabled = cfg.sslEnabled,
-                matchesStored = true
+                matchesStored = true,
+                logbookId = cfg.id
             )
         }
+        return runProbe(probe)
+    }
+
+    fun testLogbook(book: LogbookEntity, req: DbConfigRequest?): DbTestResponse {
+        val probe = if (req != null && req.host.isNotBlank()) {
+            probeFrom(book, req)
+        } else {
+            DbProbe(
+                host = book.host,
+                port = book.port,
+                database = book.databaseName,
+                username = book.username,
+                password = secretBox.decrypt(book.encryptedPassword),
+                sslEnabled = book.sslEnabled,
+                matchesStored = true,
+                logbookId = book.id
+            )
+        }
+        return runProbe(probe)
+    }
+
+    fun <T> withTenantConnection(tenantId: UUID, block: (Connection) -> T): T {
+        val book = requireActive(tenantId)
+        return withLogbookConnection(book.id, block)
+    }
+
+    fun <T> withLogbookConnection(logbookId: UUID, block: (Connection) -> T): T {
+        val ds = getOrCreatePool(logbookId)
+        return ds.connection.use(block)
+    }
+
+    fun requireActive(tenantId: UUID): LogbookEntity =
+        activeOrNull(tenantId) ?: throw NotFoundException("Database not configured — set /me/db-config first")
+
+    fun activeOrNull(tenantId: UUID): LogbookEntity? {
+        val tenant = tenants.findById(tenantId).orElse(null) ?: return null
+        val activeId = tenant.activeLogbookId
+        if (activeId != null) {
+            logbooks.findById(activeId).orElse(null)?.let { return it }
+        }
+        return logbooks.findByTenantId(tenantId).minByOrNull { it.createdAt }
+    }
+
+    private fun runProbe(probe: DbProbe): DbTestResponse {
         return try {
             DriverManager.getConnection(
                 jdbcUrl(probe.host, probe.port, probe.database, probe.sslEnabled),
@@ -108,9 +168,11 @@ class TenantDbService(
             ).use { conn ->
                 conn.createStatement().use { st -> st.executeQuery("SELECT 1").close() }
             }
-            if (probe.matchesStored && existing != null) {
-                existing.lastTestOkAt = Instant.now()
-                configs.save(existing)
+            if (probe.matchesStored && probe.logbookId != null) {
+                logbooks.findById(probe.logbookId).ifPresent {
+                    it.lastTestOkAt = Instant.now()
+                    logbooks.save(it)
+                }
             }
             DbTestResponse(true, "Connected")
         } catch (e: Exception) {
@@ -118,7 +180,7 @@ class TenantDbService(
         }
     }
 
-    private fun probeFromRequest(existing: TenantDbConfigEntity?, req: DbConfigRequest): DbProbe {
+    private fun probeFrom(existing: LogbookEntity?, req: DbConfigRequest): DbProbe {
         if (req.host.isBlank() || req.database.isBlank() || req.username.isBlank()) {
             throw BadRequestException("host, database and username are required")
         }
@@ -138,25 +200,20 @@ class TenantDbService(
             existing.databaseName == database &&
             existing.username == username &&
             existing.sslEnabled == req.sslEnabled
-        return DbProbe(host, req.port, database, username, password, req.sslEnabled, matchesStored)
+        return DbProbe(host, req.port, database, username, password, req.sslEnabled, matchesStored, existing?.id)
     }
 
-    fun <T> withTenantConnection(tenantId: UUID, block: (Connection) -> T): T {
-        val ds = getOrCreatePool(tenantId)
-        return ds.connection.use(block)
-    }
-
-    private fun getOrCreatePool(tenantId: UUID): DataSource {
-        pools[tenantId]?.takeIf { !it.isClosed }?.let { return it }
-        val cfg = configs.findById(tenantId).orElseThrow {
+    private fun getOrCreatePool(logbookId: UUID): DataSource {
+        pools[logbookId]?.takeIf { !it.isClosed }?.let { return it }
+        val cfg = logbooks.findById(logbookId).orElseThrow {
             NotFoundException("Database not configured — set /me/db-config first")
         }
         val ds = createPool(cfg)
-        pools[tenantId] = ds
+        pools[logbookId] = ds
         return ds
     }
 
-    private fun createPool(cfg: TenantDbConfigEntity): HikariDataSource {
+    private fun createPool(cfg: LogbookEntity): HikariDataSource {
         val password = secretBox.decrypt(cfg.encryptedPassword)
         val hc = HikariConfig().apply {
             jdbcUrl = jdbcUrl(cfg.host, cfg.port, cfg.databaseName, cfg.sslEnabled)
@@ -165,17 +222,17 @@ class TenantDbService(
             maximumPoolSize = props.tenant.poolMaxSize
             idleTimeout = props.tenant.poolIdleTimeoutMs
             connectionTimeout = props.tenant.connectionTimeoutMs
-            poolName = "tenant-${cfg.tenantId}"
+            poolName = "logbook-${cfg.id}"
             isAutoCommit = true
         }
         return HikariDataSource(hc)
     }
 
-    fun evictPool(tenantId: UUID) {
-        pools.remove(tenantId)?.close()
+    fun evictPool(logbookId: UUID) {
+        pools.remove(logbookId)?.close()
     }
 
-    private fun TenantDbConfigEntity.toResponse() = DbConfigResponse(
+    private fun LogbookEntity.toDbResponse() = DbConfigResponse(
         host = host,
         port = port,
         database = databaseName,
@@ -192,13 +249,11 @@ class TenantDbService(
         val username: String,
         val password: String,
         val sslEnabled: Boolean,
-        val matchesStored: Boolean
+        val matchesStored: Boolean,
+        val logbookId: UUID?
     )
 
     companion object {
-        fun buildJdbcUrl(cfg: TenantDbConfigEntity): String =
-            jdbcUrl(cfg.host, cfg.port, cfg.databaseName, cfg.sslEnabled)
-
         fun jdbcUrl(host: String, port: Int, database: String, sslEnabled: Boolean): String {
             val ssl = if (sslEnabled) "true" else "false"
             return "jdbc:mysql://$host:$port/$database" +

@@ -193,6 +193,45 @@ export function QsoForm({
             onChange={(e) => set("dxcc", Number(e.target.value) || 0)}
           />
         </Field>
+        <Field label={tr("address")}>
+          <Input value={value.address} onChange={(e) => set("address", e.target.value)} />
+        </Field>
+        <Field label={tr("continent")}>
+          <Input
+            value={value.cont}
+            onChange={(e) => set("cont", e.target.value.toUpperCase())}
+          />
+        </Field>
+        <Field label={tr("cqZone")}>
+          <Input
+            type="number"
+            value={value.cqzone ?? ""}
+            onChange={(e) =>
+              set("cqzone", e.target.value === "" ? null : Number(e.target.value))
+            }
+          />
+        </Field>
+        <Field label={tr("ituZone")}>
+          <Input
+            type="number"
+            value={value.ituzone ?? ""}
+            onChange={(e) =>
+              set("ituzone", e.target.value === "" ? null : Number(e.target.value))
+            }
+          />
+        </Field>
+        <Field label={tr("propMode")}>
+          <Input
+            value={value.propmode}
+            onChange={(e) => set("propmode", e.target.value.toUpperCase())}
+          />
+        </Field>
+        <Field label={tr("contestId")}>
+          <Input
+            value={value.contestid}
+            onChange={(e) => set("contestid", e.target.value.toUpperCase())}
+          />
+        </Field>
         <Field label="TX PWR">
           <Input
             type="number"
@@ -208,6 +247,12 @@ export function QsoForm({
         <Textarea
           value={value.comment}
           onChange={(e) => set("comment", e.target.value)}
+        />
+      </Field>
+      <Field label={tr("notes")}>
+        <Textarea
+          value={value.notes}
+          onChange={(e) => set("notes", e.target.value)}
         />
       </Field>
 

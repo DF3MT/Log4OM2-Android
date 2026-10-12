@@ -66,6 +66,7 @@ fun LogListScreen(
     val message by viewModel.message.collectAsState()
     val exportAdif by viewModel.exportAdif.collectAsState()
     val isExporting by viewModel.isExporting.collectAsState()
+    val logbooks by viewModel.logbooks.collectAsState()
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -256,7 +257,13 @@ fun LogListScreen(
                         IconButton(onClick = { viewModel.enterSelectionMode() }) {
                             Icon(Icons.Default.Checklist, stringResource(R.string.select))
                         }
-                        IconButton(onClick = viewModel::refresh) {
+                        IconButton(onClick = viewModel::prepareExportAll, enabled = !isExporting) {
+                            Icon(Icons.Default.SaveAlt, stringResource(R.string.export_all))
+                        }
+                        IconButton(onClick = {
+                            viewModel.refreshLogbooks()
+                            viewModel.refresh()
+                        }) {
                             Icon(Icons.Default.Refresh, stringResource(R.string.refresh))
                         }
                     }
@@ -265,6 +272,22 @@ fun LogListScreen(
         }
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding)) {
+            if (logbooks.isNotEmpty() && !selectionMode) {
+                val activeId = logbooks.find { it.active }?.id ?: logbooks.first().id
+                DropdownField(
+                    label = stringResource(R.string.section_logbooks),
+                    value = activeId,
+                    options = logbooks.map { it.id },
+                    onSelect = { id -> if (id != activeId) viewModel.activateLogbook(id) },
+                    optionLabel = { id ->
+                        val book = logbooks.find { it.id == id }
+                        listOf(book?.displayName.orEmpty(), book?.stationCallsign.orEmpty())
+                            .filter { it.isNotBlank() }
+                            .joinToString(" · ")
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
             if (filter.isActive && !selectionMode) {
                 ActiveFilterChips(
                     filter = filter,

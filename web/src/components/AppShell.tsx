@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, type ReactNode } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocale } from "@/components/LocaleProvider";
+import { LogbookSwitcher } from "@/components/LogbookSwitcher";
 import { Button } from "@/components/ui";
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -59,7 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
               </Link>
             ))}
           </div>
-          <div className="flex items-center gap-2 sm:ml-auto">
+          <div className="flex flex-wrap items-center gap-2 sm:ml-auto">
+            <LogbookSwitcher />
             <select
               aria-label={tr("language")}
               className="rounded-md border border-[var(--line)] bg-transparent px-2 py-1 text-sm"

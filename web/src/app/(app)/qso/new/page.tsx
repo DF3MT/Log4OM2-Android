@@ -17,10 +17,11 @@ export default function NewQsoPage() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    void api
-      .getStation()
-      .then((s: StationProfile) => {
+    void Promise.all([api.getStation(), api.listLogbooks().catch(() => [])])
+      .then(([s, books]: [StationProfile, { stationCallsign: string; active: boolean }[]]) => {
         const band = s.defaultBand || "20m";
+        const activeCall =
+          books.find((b) => b.active)?.stationCallsign || s.callsign;
         setQso(
           emptyQso({
             band,
@@ -28,7 +29,7 @@ export default function NewQsoPage() {
             freq: freqKhzForBand(band) || 14225,
             rstsent: s.defaultRstSent || "59",
             rstrcvd: s.defaultRstRcvd || "59",
-            stationcallsign: s.callsign,
+            stationcallsign: activeCall,
             mygridsquare: s.gridsquare,
             myname: s.name,
             myrig: s.rig,

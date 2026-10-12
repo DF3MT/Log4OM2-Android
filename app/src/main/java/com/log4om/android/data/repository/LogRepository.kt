@@ -3,7 +3,11 @@ package com.log4om.android.data.repository
 import com.log4om.android.data.adif.AdifWriter
 import com.log4om.android.data.model.BulkInsertResult
 import com.log4om.android.data.model.LogFilter
+import com.log4om.android.data.model.LogbookConfig
+import com.log4om.android.data.model.LogbookDraft
 import com.log4om.android.data.model.Qso
+import com.log4om.android.data.model.RemoteProbe
+import com.log4om.android.data.model.RemoteSyncResult
 import com.log4om.android.data.model.QrzCallsignData
 import com.log4om.android.data.network.ClubLogApiService
 import com.log4om.android.data.network.HamQthApiService
@@ -37,6 +41,31 @@ class LogRepository(
     }
 
     suspend fun testDbConnection(): Result<Unit> = api.testTenantDb()
+
+    suspend fun listLogbooks(): Result<List<LogbookConfig>> = api.listLogbooks()
+
+    suspend fun saveLogbook(draft: LogbookDraft): Result<LogbookConfig> = api.saveLogbook(draft)
+
+    suspend fun deleteLogbook(id: String): Result<Unit> = api.deleteLogbook(id)
+
+    suspend fun activateLogbook(id: String): Result<LogbookConfig> = api.activateLogbook(id)
+
+    suspend fun testLogbook(draft: LogbookDraft): Result<RemoteProbe> = api.testLogbook(draft)
+
+    suspend fun exportLogbook(id: String): Result<String> = api.exportLogbook(id)
+
+    suspend fun syncLogbook(id: String, service: String): Result<RemoteSyncResult> =
+        api.syncLogbook(id, service)
+
+    suspend fun getStationJson() = api.getStation()
+
+    suspend fun putStationJson(body: org.json.JSONObject) = api.putStation(body)
+
+    suspend fun getLookupJson() = api.getLookup()
+
+    suspend fun putLookupJson(body: org.json.JSONObject) = api.putLookup(body)
+
+    suspend fun testLookup(body: org.json.JSONObject): Result<RemoteProbe> = api.testLookup(body)
 
     suspend fun getRecentQsos(limit: Int = 100, offset: Int = 0): Result<List<Qso>> =
         api.listQsos(LogFilter(), limit, offset)
